@@ -1,0 +1,6 @@
+# Do not track these folders
+__pycache__
+venv
+data
+# Do not track these files
+app_data.csv
