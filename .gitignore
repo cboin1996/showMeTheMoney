@@ -2,5 +2,7 @@
 __pycache__
 venv
 data
+CB_IOS_APP
 # Do not track these files
 app_data.csv
+expenseDB.json
