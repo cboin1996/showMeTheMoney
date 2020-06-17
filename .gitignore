@@ -6,6 +6,8 @@ CB_IOS_APP
 ShowMeYourMoney.egg-info
 build
 dist
+backups
+lib
 # Do not track these files
 app_data.csv
 expenseDB.json

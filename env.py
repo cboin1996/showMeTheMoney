@@ -74,3 +74,5 @@ CREDIT_IGNORABLE_TRANSACTIONS = ['MB-CREDIT CARD/LOC PAY.', 'PC - PAYMENT']
 
 EXPENSE_MISC_STR = "Misc"
 EXPENSE_MISC_POS_VALUES = ['misc', 'misc.', 'miscellaneous']
+
+OUTPUT_SEP_STR = "--- --- --- --- --- ---"

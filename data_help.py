@@ -56,7 +56,7 @@ def load_and_process_csvs(file_paths, strip_cols=None):
         
 def strip_cols_in_df(df, cols):
     for col in cols:
-        print(f"{df[col]} : {df[col].str.strip()}")
+        # print(f"{df[col]} : {df[col].str.strip()}")
         df[col] = df[col].str.strip()
     return df
 
@@ -89,9 +89,9 @@ def filter_by_amnt(df, col_name):
     """
     Takes a dataframe with positive and negative dollara mounts, and returns two frames: one with pos and one with neg.. where the negs are set to positive.
     """
-    inc_df = df[df[col_name] > 0]
-    exp_df = df[df[col_name] < 0]
-    exp_df[col_name] = exp_df[col_name].abs()
+    inc_df = df[df[col_name] > 0].copy()
+    exp_df = df[df[col_name] < 0].copy()
+    exp_df.loc[:, col_name] = exp_df[col_name].abs()
     return inc_df, exp_df
 
 
@@ -165,6 +165,7 @@ def modify_dict_key(dct, old_key, new_key):
     Modify's a dict key, returning the modified dict
     """
     if old_key in dct.keys():
+        print(f"Replaced {old_key} with {new_key}")
         dct[new_key] = dct.pop(old_key)
     else:
         print("The key you wish to change does not exist in the dict.")
@@ -177,6 +178,7 @@ def match_mod_dict_vals(dct:dict, old_val:str, new_val:str):
     """
     for k,v in dct.items():
         if old_val == v:
+            print(f"Replaced {old_val} with {new_val}")
             dct[k] = new_val
 
     return dct

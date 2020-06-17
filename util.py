@@ -37,6 +37,16 @@ def get_month_from_timestamp(timestamp, start=True):
     dt_object = dt_object.replace(day=day).strftime("%Y-%m-%d")
     return dt_object 
 
+def replace_string_in_list(lst, string, repl_string):
+    """
+    Replaces an item in a list with string, if the item exists.
+    """
+    for i, item in enumerate(lst):
+        if item == string:
+            print(f"Replaced '{item}' with '{repl_string}'.")
+            lst[i] = repl_string
+    return lst
+
 def get_user_input_for_chars(prompt, chars):
     flag = False
     while not flag:
@@ -58,6 +68,18 @@ def get_integer_input(prompt):
         except ValueError:
             print("Must be an integer input.")
 
+def get_float_input(prompt, force_pos=False, roundto=2):
+    flag = False
+    while not flag:
+        try:
+            flt = float(input(prompt))
+            if flt >= 0:
+                return round(flt, roundto) 
+            else:
+                print("Enter a positive value! I think we all wish money grew on trees.")
+        except ValueError:
+            print("Must be a number input!")
+
 def process_text(string):
     return string.lower().strip()
 
@@ -70,6 +92,9 @@ def process_input(prompt):
 def select_from_list(lst, prompt, abortchar=None, ret_match=False):
     """
     Allows user to select a single item from a list
+    returns:
+        if ret_match = False - returns index selection
+        if ret_match = True - returns item at the index selection
     """
     for i, elem in enumerate(lst):
         print(f"\t[{i}] - {elem}")
@@ -97,7 +122,7 @@ def select_from_list(lst, prompt, abortchar=None, ret_match=False):
         user_sel = lst[user_sel]
     return user_sel 
 
-def select_dict_key_using_integer(dct, prompt, print_children=True, quit_str=''):
+def select_dict_key_using_integer(dct, prompt, print_children=True, quit_str='', print_aborting=True):
     """
     Returns a key from the dictionary that a user selects using an integer index. Funny eh?
     params:
@@ -117,6 +142,8 @@ def select_dict_key_using_integer(dct, prompt, print_children=True, quit_str='')
         try:
             user_sel = input(prompt)
             if quit_str == user_sel:
+                if print_aborting == True:
+                    print("Aborting.")
                 return None 
             user_sel = int(user_sel)
             if user_sel > len(dct) - 1 or user_sel < 0:
@@ -133,8 +160,10 @@ def print_simple_dict(dct):
     """
     Prints key value pairs for a dict
     """
+    i = 0
     for k, v in dct.items():
-        print(f"\t {k} : {v}")
+        print(f"\t[{i}] {k} : {v}")
+        i += 1
 
 def print_nested_dict(dct):
     """
@@ -185,6 +214,29 @@ def format_input_to_list(prompt):
 
     return lst 
 
+def select_item_not_in_list(prompt, lst, ignorecase=True, abortchar=None):
+    """
+    Prompts the user to enter a string, and checks to make sure the string is not in the list before returning list with added string
+    """
+    flag = False
+    lst_cp = list(lst)
+    if ignorecase == True:
+        for i in range(len(lst_cp)):
+            lst_cp[i] = lst_cp[i].lower()
+    while not flag:
+        user_in = input(prompt)
+        if abortchar == None:
+            print("Aborting process.")
+            return None
+        if ignorecase == True:
+            user_in = user_in.lower()
+        if user_in in lst_cp:
+            print("Please enter something not found in the list.")
+        else:
+            flag = True 
+    
+    return user_in
+
 def select_indices_of_list(prompt='', list_to_compare_to=[], return_matches=False, abortable=False, abortchar=None, print_lst=True):
     """
     Gets user input for certain elements of a list
@@ -199,7 +251,7 @@ def select_indices_of_list(prompt='', list_to_compare_to=[], return_matches=Fals
     if print_lst == True:
         print_lst_with_index(list_to_compare_to)
     while True:
-        user_input = input(prompt)
+        user_input = input(prompt + " (e.g. 1 2 3): ")
         user_input = user_input.split(' ')
         for i, char in enumerate(user_input): # validate each character
             try:
@@ -240,7 +292,8 @@ def check_lst_for_values(lst, vals):
 
 def print_fulldf(df):
     with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.expand_frame_repr', False):
+        print(" --- --- --- --- --- ")
         print(df)
-
+        print(" --- --- --- --- --- ")
 if __name__=="__main__":
     format_input_to_list("Input words seped by spaces: ")
