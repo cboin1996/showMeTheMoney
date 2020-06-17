@@ -14,7 +14,12 @@ def setup_expense_names(exp_path: str):
     """
     exp_list = data_help.read_jsonFile(exp_path)
     if len(exp_list) == 0:
-        exp_list[env.EXPENSE_DATA_KEY] = util.format_input_to_list("Please input your expense categories, separated by a space [exp1 exp2 ...]: ")
+        exp_list[env.EXPENSE_DATA_KEY] = util.format_input_to_list("Please input your expense categories, separated by a space [exp1 exp2 ...] I will add a Misc category since it is reserved: ")
+        idxs_matched = util.check_lst_for_values(exp_list[env.EXPENSE_DATA_KEY], env.EXPENSE_MISC_POS_VALUES)
+        for idx in sorted(idxs_matched, reverse=True):
+            print(f"Found {exp_list[env.EXPENSE_DATA_KEY][idx]} in your expenses. Removing since '{env.EXPENSE_MISC_STR}' is reserved as miscellaneous category.")
+            del exp_list[env.EXPENSE_DATA_KEY][idx]
+        exp_list[env.EXPENSE_DATA_KEY].append(env.EXPENSE_MISC_STR)
         data_help.write_to_jsonFile(exp_path, exp_list)
 
 def add_budget_info(monthly_budget: dict):
@@ -32,7 +37,7 @@ def declare_new_budget(date, exp_data):
     done_adding_budgets = False 
     exp_list  = exp_data[env.EXPENSE_DATA_KEY]
     local_budget = {}
-    month_total = util.get_integer_input(f"Please input your total for the month starting {date}: ")
+    month_total = util.get_integer_input(f"Please input your total for the month ending {date}: ")
     budg_remaining = month_total
 
     for i, exp in enumerate(exp_list):
@@ -125,16 +130,20 @@ def get_expenses_for_rows(df, stor_exp_data_path, stor_data_path, budg_path):
     print("\nIterating your transactions.\n")
 
     exp_stor_db = data_help.read_jsonFile(stor_exp_data_path) # initialize the objects for tracking changes
-    storDB = data_help.read_jsonFile(stor_data_path)
-    exp_budg_db = data_help.read_jsonFile(budg_path)
+    stor_db = data_help.read_jsonFile(stor_data_path)
+    budg_db = data_help.read_jsonFile(budg_path)
 
     for idx, row in df.iterrows():
         if pd.isnull(row[env.EXPENSE]):
-            month_start_date = util.get_month_from_timestamp(row[env.DATE]) # get relevant expenses for that month set by the user.
+            month_end_date = util.get_month_from_timestamp(row[env.DATE], start=False) # get relevant expenses for that month set by the user.
             if type(row[env.BANK_STORENAME]) is str:
                 match = env.RE_EXPR.search(row[env.BANK_STORENAME])
                 if match:
+
                     processed_text = util.process_text(match.group(0))
+                    if processed_text in env.IGNORABLE_TRANSACTIONS: # drop a transaction from the frame if it is ignorable such as credit card payments etc.
+                        df.drop(idx, inplace=True)
+                        continue
                     # print(f"Was able to filter - {row[env.BANK_STORENAME]} -> {processed_text}")
                     storename = processed_text
                         
@@ -142,65 +151,79 @@ def get_expenses_for_rows(df, stor_exp_data_path, stor_data_path, budg_path):
                     print(f"Unable to filter - {row[env.BANK_STORENAME]}")
                     storename = row[env.BANK_STORENAME]
                 
-            else:
+            else: # cqtch the NaN case
                 query = row[env.TYPE].lower()
                 print(query)
                 storename = query
-        else:
-            print("Already have expense here heeheh")
-
-        print("Curr Transaction:  %-10s %-10s %-10s %-10s" % (row[env.DATE], row[env.AMOUNT], storename, row[env.TYPE]))
-        selected_exp, exp_stor_db = search_store_relationships(storename, exp_stor_db, exp_budg_db[month_start_date], stor_exp_data_path)
-        df.at[idx, env.FILT_STORENAME] = processed_text
-        df.at[idx, env.EXPENSE] = selected_exp  
+            
+            print("Curr Transaction:  %-10s %-10s %-10s %-10s" % (row[env.DATE], row[env.AMOUNT], storename, row[env.TYPE]))
+            selected_exp, exp_stor_db, stor_db, storename = search_store_relationships(storename, exp_stor_db, budg_db[month_end_date], 
+                                                                    stor_exp_data_path, stor_db, stor_data_path)
+            df.at[idx, env.FILT_STORENAME] = storename
+            df.at[idx, env.EXPENSE] = selected_exp  
     
-    print(df)
+    print(f"\nFinished gathering your expense data: \n\n{df}")
     return df
     
-def search_store_relationships(storename, exp_stor_db, exp_budg_db, stor_exp_data_path):
+def search_store_relationships(storename, exp_stor_db, budg_db, stor_exp_data_path, stor_db, stor_data_path):
 
     """
     Searches the store expense relationship (exp_stor_db) for an expense and if multiple exist, prompts the user to select one.
     params:
         storename - a store's name from the dataframe
         exp_stor_db - a python dict containing stores as keys, and arrays of expenses as values
-        exp_budg_db - expense budget dict database
-        stor_exp_data_path - filepath to expensesDB 
+        budg_db - expense budget dict database
+        stor_exp_data_path - filepath to storesWithExpenses.json
+        stor_db - the storename to store strings database
+        stor_data_path - the path to stor_db
     returns: the selected expense string, and the modified exp_stor_db
     """
     exp_stor_dbKeys = exp_stor_db.keys()
-    if storename in exp_stor_dbKeys: # check if store is within the exp_stor_db
-        exps_fr_store = exp_stor_db[storename]
-        if len(exps_fr_store) == 0:
-            selected_exp = util.select_dict_key_using_integer(exp_budg_db, 
-                                                              f"No expenses for {storename}. Please select an expense to go with this store from now on.",
-                                                              print_children=False)
-            exp_stor_db[storename] = [selected_exp]
-            data_help.write_to_jsonFile(stor_exp_data_path, exp_stor_db)
 
-        elif len(exps_fr_store) == 1:
-            selected_exp = exps_fr_store[0]
-        else:
-            selected_exp = exps_fr_store[select_expense_idx(exps_fr_store, storename)]
-
-        return selected_exp, dict(exp_stor_db)
+    if storename not in exp_stor_dbKeys:
+        storename, stor_db, exp_stor_db = select_store_for_purchase(storename, stor_data_path, stor_db, exp_stor_db, stor_exp_data_path)
     
-    else: # simplify store name, check for matches
-        select_store_for_purchase(storename, store_keys=exp_stor_dbKeys)
-        return "foo", dict(exp_stor_db)
+    exps_fr_store = exp_stor_db[storename]
 
-def select_store_for_purchase(storename, store_keys=None): # TODO:
+    if len(exps_fr_store) == 0:
+        selected_exp = util.select_dict_key_using_integer(budg_db, 
+                                                            f"No expenses for {storename}. Please select an expense to go with this store from now on.",
+                                                            print_children=False)
+        exp_stor_db[storename] = [selected_exp]
+        data_help.write_to_jsonFile(stor_exp_data_path, exp_stor_db)
+
+    elif len(exps_fr_store) == 1:
+        selected_exp = exps_fr_store[0]
+    else:
+        selected_exp = exps_fr_store[select_expense_idx(exps_fr_store, storename)]
+
+    return selected_exp, dict(exp_stor_db), stor_db, storename
+    
+def select_store_for_purchase(storename, stor_data_path, stor_db, exp_stor_db, stor_exp_data_path):
     """
-    Uses user input to match a storename to a storename in the database. Allows writing
+    Uses user input to match a storename to a storename in the database. If no store is found, takes user through adding a store.
     """
-    simplified_sname = storename.split(' ')[0]
-    print(simplified_sname)
-    matches = [key for key in store_keys if simplified_sname in key]
-    print(matches)
+    if storename not in stor_db.keys():
+        prompt = f"I cannot filter for the store '{storename}'. Please select the storename for this store and I will remember it for next time. If it is a new store, type 'q': "
+        matched_storename = util.select_dict_key_using_integer(exp_stor_db, prompt, quit_str='q', print_children=False)
+
+        if matched_storename == None:
+            matched_storename = util.process_input(f"Could you enter a storename so I remember this store in the future? ")
+            exp_stor_db.update({matched_storename : []})  # if new store is added, add it to the exp_stor_db, with empty expenses to be added later by user
+            data_help.write_to_jsonFile(stor_exp_data_path, exp_stor_db)
+        stor_db.update({storename : matched_storename})
+        
+        data_help.write_to_jsonFile(stor_data_path, stor_db)
+
+    else:
+        matched_storename = stor_db[storename]
+    
+    return matched_storename, stor_db, exp_stor_db
 
 def select_expense_idx(exps_fr_store, storename):
     """
     Gets the index of an expense to select from the user
     """
-    selection_idx = util.select_from_list(exps_fr_store, "Multiple expenses for this store. Select one please: ")
+    selection_idx = util.select_from_list(exps_fr_store, f"Multiple expenses for store '{storename}'. Select one please: ")
     return selection_idx
+

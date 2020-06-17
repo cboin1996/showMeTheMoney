@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import os, sys
 import json
 import shutil
@@ -18,26 +19,43 @@ def load_csv(file_path, col_names=None, index_col=None, dtype=None, parse_dates=
     return df
 
 
-def load_csvs(file_paths, col_names=None, dtype=None, parse_dates=None):
+def load_csvs(file_paths, col_names=None, dtype=None, parse_dates=None, index=None):
     """
     Loads multiple csvs into a single frame
     params:
         file_paths - the paths to the files to load
-        col_names - the names of the dataframe columns
+        col_names - the names of the dataframe columns to grab while importing
     returns : pandas dataframe
     """
-    return pd.concat(pd.read_csv(file_path, names=col_names,  dtype=dtype, parse_dates=parse_dates) for file_path in file_paths) 
+    return pd.concat(pd.read_csv(file_path, names=col_names,  dtype=dtype, parse_dates=parse_dates, index_col=index) for file_path in file_paths) 
 
+def load_and_process_csvs(file_paths):
+    """
+    Loads multiple csvs from differing data tables given from scotiabank (credit and debit)
+    """
+    dfs_in = []
+    for fpath in file_paths:
+        df = pd.read_csv(fpath, header=None)
+        if len(df.columns) == 3: # scotia credit cards have 3 cols, debit has more.
+            df.columns = env.SB_BASE_CREDIT_COLNAMES
+            df[env.TYPE] = np.nan # add type column to credit data to match debit data frame
+        else:
+            df.columns = env.SB_BASE_DEBIT_COLNAMES
+            df.drop(columns=[env.NULL], inplace=True)
 
-def drop_dups(df, col_names):
+        dfs_in.append(df)
+    
+    return pd.concat(dfs_in)
+        
+
+def drop_dups(df, col_names, ignore_index=False):
     """
     Drops any duplicates in a dataset, writes to file.
     """
-    if df.duplicated(subset = col_names).any():
-        print("Stripped data for newest entries only.")
-        df.drop_duplicates(subset=col_names, inplace=True)
-    else:
-        print("hey thanks for the break. No duplicates detected.")
+    print("Removing duplicates in your data if any.")
+    df[env.DATE] = pd.to_datetime(df[env.DATE]) # this line is crucial for making drop dups work. drop dups doesn't work on pandas Object type for dates.
+    df.drop_duplicates(subset=col_names, inplace=True, ignore_index=ignore_index)
+
     return df
 
 def write_data(df, out_filepath):
@@ -55,12 +73,13 @@ def move_files(files, dest):
         shutil.move(file, dest)
 
 
-def filter_by_amnt(df):
+def filter_by_amnt(df, col_name):
     """
-    Takes a dataframe with positive and negative dollara mounts, and returns two frames: one with pos and one with neg.
+    Takes a dataframe with positive and negative dollara mounts, and returns two frames: one with pos and one with neg.. where the negs are set to positive.
     """
-    inc_df = df[df[env.AMOUNT] > 0]
-    exp_df = df[df[env.AMOUNT] < 0]
+    inc_df = df[df[col_name] > 0]
+    exp_df = df[df[col_name] < 0]
+    exp_df[col_name] = exp_df[col_name].abs()
     return inc_df, exp_df
 
 
@@ -106,16 +125,28 @@ def read_jsonFile_ifchanged(fp, obj1, obj2):
     if obj1 != obj2:
         return read_jsonFile(fp)
 
-def extract_first_days_of_months(date_col):
+def extract_months(date_col, start=True):
     """
-    Given a list of dates, returns only the first day of the months present in that list
+    Given a pandas series of dates, returns only the first day of the months present in that list
     """
     date_col.drop_duplicates(inplace=True)
     date_list = []
     for date in date_col:
-        date_list.append(util.get_month_from_timestamp(date))
+        date_list.append(util.get_month_from_timestamp(date,  start=start))
+  
     
     return set(date_list)
+
+def extract_years(date_col, str_format=True):
+    """
+    Gets a list (str) of years found in a pandas series.
+    """
+    years = list(set(date_col.dt.year.values))
+    if str_format == True:
+        ret = [str(year) for year in years]
+    else:
+        ret = years
+    return ret
 
 def modify_dict_key(dct, old_key, new_key):
     """
@@ -137,4 +168,5 @@ def match_mod_dict_vals(dct:dict, old_val:str, new_val:str):
             dct[k] = new_val
 
     return dct
+
 

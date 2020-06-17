@@ -3,6 +3,9 @@ __pycache__
 venv
 data
 CB_IOS_APP
+ShowMeYourMoney.egg-info
+build
+dist
 # Do not track these files
 app_data.csv
 expenseDB.json

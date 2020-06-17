@@ -1,5 +1,6 @@
 import os 
 import re
+import pandas as pd
 """
 Dataframe Headers
 """
@@ -11,9 +12,21 @@ BANK_STORENAME = 'BankStoreName'
 FILT_STORENAME = 'FilteredStoreName'
 EXPENSE = 'Expense'
 
-COLUMN_NAMES = [DATE, AMOUNT, NULL, TYPE, BANK_STORENAME, FILT_STORENAME, EXPENSE]
-SB_dtypes = {DATE : 'str', AMOUNT : 'float', NULL : 'str', TYPE : 'str', BANK_STORENAME : "str", FILT_STORENAME : "str", EXPENSE : 'str'}
+BUDGET = 'Budget'
+REMAINING = 'Remaining'
+
+SB_BASE_CREDIT_COLNAMES = [DATE, BANK_STORENAME, AMOUNT]
+SB_BASE_DEBIT_COLNAMES = [DATE, AMOUNT, NULL, TYPE, BANK_STORENAME]
+SB_INC_COLNAMES = [DATE, AMOUNT, TYPE, BANK_STORENAME]
+
+COLUMN_NAMES = [DATE, AMOUNT, TYPE, BANK_STORENAME, FILT_STORENAME, EXPENSE]
+
+CHECK_FOR_DUPLICATES_COL_NAMES = [DATE, AMOUNT, TYPE, BANK_STORENAME]
+
+INC_dtypes = {DATE : 'str', AMOUNT : 'float', TYPE : 'str', BANK_STORENAME : "str"}
+SB_dtypes = {DATE : 'str', AMOUNT : 'float', TYPE : 'str', BANK_STORENAME : "str", FILT_STORENAME : "str", EXPENSE : 'str'}
 SB_parse_dates = ['Date']
+mydateparser = lambda x: pd.datetime.strptime(x, "%Y-%m-%d")
 
 """
 regular expression Parameters
@@ -41,7 +54,8 @@ RE_EXPR = re.compile(
                         r'|((?<=(APOS|FPOS|OPOS) )(.*))'
                     )
 
-OUT_DATA_TEMPL = "db.csv"
+OUT_EXP_DATA_TEMPL = "exp_db.csv"
+OUT_INC_DATA_TEMPL = "inc_db.csv"
 OUT_DATA_CHKSZ = 3
 csv = "*.csv"
 EXP_STOR_DB_FNAME = os.path.join('lib', 'storesWithExpenses.json')
@@ -51,3 +65,9 @@ EXP_FNAME = os.path.join('lib', 'expenses.json')
 
 EXPENSE_DATA_KEY = 'expense'
 BUDGET_TOTAL_KEY = 'total'
+
+IGNORABLE_TRANSACTIONS = ['credit card/loc pay.', 'PC - PAYMENT FROM']
+CREDIT_IGNORABLE_TRANSACTIONS = ['MB-CREDIT CARD/LOC PAY.', 'PC - PAYMENT']
+
+EXPENSE_MISC_STR = "Misc"
+EXPENSE_MISC_POS_VALUES = ['misc', 'misc.', 'miscellaneous']
