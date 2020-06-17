@@ -54,15 +54,15 @@ def check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adat
         return False
 
     if len(ndata_filepaths) != 0 and len(db_exp_data_fpaths) != 0 and len(db_inc_data_fpaths) != 0:
-        df_new = data_help.load_and_process_csvs(file_paths=ndata_filepaths)
+        df_new = data_help.load_and_process_csvs(file_paths=ndata_filepaths, strip_cols=[env.TYPE, env.BANK_STORENAME])
         df_inc_new, df_exp_new = data_help.filter_by_amnt(df_new, col_name=env.AMOUNT)
         
         df_exp_new[env.FILT_STORENAME] = np.nan
         df_exp_new[env.EXPENSE] = np.nan # add NaN column to the expense df.
         
 
-        df_exp = data_help.load_csvs(file_paths=db_exp_data_fpaths)
-        df_inc = data_help.load_csvs(file_paths=db_inc_data_fpaths)
+        df_exp = data_help.load_csvs(file_paths=db_exp_data_fpaths, strip_cols=[env.TYPE, env.BANK_STORENAME])
+        df_inc = data_help.load_csvs(file_paths=db_inc_data_fpaths, strip_cols=[env.TYPE, env.BANK_STORENAME])
 
         df_exp = pd.concat([df_exp, df_exp_new])
         df_inc = pd.concat([df_inc, df_inc_new])
@@ -78,8 +78,8 @@ def check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adat
         
     print("New data loaded locally.")
     print(f"INCOME\n\n{df_inc}\n\nEXPENSES\n\n{df_exp}\n")
-    df_exp = data_help.drop_dups(df=df_exp, col_names=env.CHECK_FOR_DUPLICATES_COL_NAMES, ignore_index=True)
-    df_inc = data_help.drop_dups(df=df_inc, col_names=env.SB_INC_COLNAMES, ignore_index=True)
+    df_exp = data_help.drop_dups(df=df_exp, col_names=env.CHECK_FOR_DUPLICATES_COL_NAMES, ignore_index=True, strip_col=env.TYPE)
+    df_inc = data_help.drop_dups(df=df_inc, col_names=env.SB_INC_COLNAMES, ignore_index=True, strip_col=env.TYPE)
 
     print(f"INCOME\n\n{df_inc}\n\nEXPENSES\n\n{df_exp}\n")
     df_exp.sort_values(by=[env.DATE], inplace=True) # sort data by date.
@@ -116,7 +116,7 @@ def get_income(db_inc_data_fpaths: list):
     inc_df = data_help.load_csvs(db_inc_data_fpaths, dtype=env.INC_dtypes, parse_dates=env.SB_parse_dates)
     inc_df = inc_df[~inc_df.BankStoreName.str.contains("|".join(env.CREDIT_IGNORABLE_TRANSACTIONS))] # filter out any credit payments from debit to here.
     data_help.write_data(inc_df, db_inc_data_fpaths[0])
-    print(inc_df)
+    util.print_fulldf(inc_df)
 
 def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path):
     df_exp = data_help.load_csvs(db_exp_data_fpaths, dtype=env.SB_dtypes, parse_dates=env.SB_parse_dates, index=env.DATE)
@@ -137,17 +137,18 @@ def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor
         df_budg = df_budg.stack().apply(pd.Series).rename(columns={0:env.BUDGET}) # collapse data into multindex frame
         print("---------------")
         print("All Income this year. ")
-        print(df_inc)
+        util.print_fulldf(df_inc)
         print("---------------")
         print("Income grouped by month and store")
         df_inc_per_month = df_inc.groupby([pd.Grouper(freq='M'), env.BANK_STORENAME]).sum()
         print(df_inc_per_month)
         print("---------------")
         print("All transaction this year.")
-        print(df_exp)
+        util.print_fulldf(df_exp)
         print("---------------")
         print("Totals by store grouped per month.")
-        print(df_exp.groupby([pd.Grouper(freq="M"), env.EXPENSE, env.FILT_STORENAME]).sum())
+        df_exp_stor_per_month = df_exp.groupby([pd.Grouper(freq="M"), env.EXPENSE, env.FILT_STORENAME]).sum()
+        util.print_fulldf(df_exp_stor_per_month)
         print("----------------")
         df_exp_per_month = df_exp.groupby([pd.Grouper(freq="M"), env.EXPENSE]).sum()
         df_exp_budg_per_month = pd.concat([df_exp_per_month, df_budg], axis=1)
@@ -155,14 +156,24 @@ def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor
         df_exp_budg_per_month[env.REMAINING] = df_exp_budg_per_month[env.BUDGET] - df_exp_budg_per_month[env.AMOUNT]
         print("----------------")
         print("Totals by expense grouped per month with budgets")
-        print(df_exp_budg_per_month)
+        util.print_fulldf(df_exp_budg_per_month)
 
-        bar_plotter(df_exp_budg_per_month, df_inc, (15,12), nrows=3, ncols=1, subfigs_per_fig=3)
-    
-    
-def bar_plotter(df_to_plot, df_inc, figsize=None, nrows=None, ncols=None, subfigs_per_fig=None):
+        title_templ = "%s\nIncome: %s | Expenses: %s | Budget: %s\nNet Income: %s | Budget Rem.: %s"
+        budg_plotter(df_exp_budg_per_month, df_exp_budg_per_month.groupby(level=0).sum(), df_inc, (15,12), nrows=3, ncols=1, subfigs_per_fig=3, title_templ=title_templ, show=False)
+        budg_plotter(df_exp_stor_per_month, df_exp_budg_per_month.groupby(level=0).sum(), df_inc, (15,12), nrows=3, ncols=1, subfigs_per_fig=3, title_templ=title_templ, show=True)
+
+def budg_plotter(df_to_plot, budget_df, df_inc, figsize=None, nrows=None, ncols=None, subfigs_per_fig=None, title_templ="", show=True):
     """
     Given a multindex dataframe, plots the data
+    params:
+        df_to_plot - the multiindex df to iterate and plot. 
+        budget_df - simplified budget data showing total amount and budget for the month
+        figsize - the figure size in tuple format
+        nrows - the number of figures to plot in a row
+        ncols - the number of figures to plot in a col
+        subfigs_per_fig - the number of subfigs to plot on a single figure
+        title_templ - the unformatted string for formatting
+        show - boolean allowing the function to be chained, showing all plots at once at the end.
     """
     plt.figure(figsize=figsize, facecolor='white')
     plot_idx = 1
@@ -174,19 +185,23 @@ def bar_plotter(df_to_plot, df_inc, figsize=None, nrows=None, ncols=None, subfig
         sub_df.reset_index(level=0, inplace=True, drop=True)
         ax = plt.subplot(nrows, ncols, plot_idx)
 
-        month_exp_tot = round(sub_df[env.AMOUNT].sum(), 2)
+        month_exp_tot = round(budget_df.loc[f"{date.year}-{date.month}", env.AMOUNT].sum(), 2)
         month_inc_tot = round(df_inc.loc[f"{date.year}-{date.month}", env.AMOUNT].sum(),2)
-    
-        title = f"{date}\nIncome: {month_inc_tot} | Expenses: {month_exp_tot} | Budget: {round(sub_df[env.BUDGET].sum(),2)}\nNet Income: {round(month_inc_tot-month_exp_tot,2)} | Budget Rem.: {round(sub_df[env.REMAINING].sum(), 2)}"
+        budg_tot = round(budget_df.loc[f"{date.year}-{date.month}", env.BUDGET].sum(), 2)
+        net_inc = round(month_inc_tot - month_exp_tot, 2)
+        budg_re = round(budg_tot - month_exp_tot, 2)
+
+        title = title_templ % (f"{date.year}-{date.month}", month_inc_tot, month_exp_tot, budg_tot, net_inc, budg_re)
+        ax.set_title(title)
         sub_ax = sub_df.plot.bar(ax=ax)
         for p in sub_ax.patches:
             ax.annotate(str(round(p.get_height(), 2)), (p.get_x()+p.get_width()/2., p.get_height()), 
                         ha='center', va='center', fontsize=7, fontweight='bold')
 
-        ax.set_title(title)
         plot_idx += 1
     plt.tight_layout()
-    plt.show()
+    if show == True:
+        plt.show()
 
 if __name__=="__main__":
     root = sys.path[0]

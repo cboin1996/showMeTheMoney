@@ -65,8 +65,11 @@ EXP_FNAME = os.path.join('lib', 'expenses.json')
 
 EXPENSE_DATA_KEY = 'expense'
 BUDGET_TOTAL_KEY = 'total'
-
-IGNORABLE_TRANSACTIONS = ['credit card/loc pay.', 'PC - PAYMENT FROM']
+"""
+IGNORABLE_TRANSACTIONS:
+transfer ignores the movement of money between scotia acounts, PC - PAYMENT FROM and credit card/loc pay ignores credit payments
+"""
+IGNORABLE_TRANSACTIONS = ['credit card/loc pay.', 'PC - PAYMENT FROM', 'transfer']
 CREDIT_IGNORABLE_TRANSACTIONS = ['MB-CREDIT CARD/LOC PAY.', 'PC - PAYMENT']
 
 EXPENSE_MISC_STR = "Misc"

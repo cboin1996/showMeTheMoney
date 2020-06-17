@@ -237,5 +237,10 @@ def check_lst_for_values(lst, vals):
         if item.lower() in vals:
             idxs_matched.append(i)
     return idxs_matched
+
+def print_fulldf(df):
+    with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.expand_frame_repr', False):
+        print(df)
+
 if __name__=="__main__":
     format_input_to_list("Input words seped by spaces: ")

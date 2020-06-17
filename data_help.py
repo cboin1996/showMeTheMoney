@@ -19,7 +19,7 @@ def load_csv(file_path, col_names=None, index_col=None, dtype=None, parse_dates=
     return df
 
 
-def load_csvs(file_paths, col_names=None, dtype=None, parse_dates=None, index=None):
+def load_csvs(file_paths, col_names=None, dtype=None, parse_dates=None, index=None, strip_cols=None):
     """
     Loads multiple csvs into a single frame
     params:
@@ -27,9 +27,12 @@ def load_csvs(file_paths, col_names=None, dtype=None, parse_dates=None, index=No
         col_names - the names of the dataframe columns to grab while importing
     returns : pandas dataframe
     """
-    return pd.concat(pd.read_csv(file_path, names=col_names,  dtype=dtype, parse_dates=parse_dates, index_col=index) for file_path in file_paths) 
+    df = pd.concat(pd.read_csv(file_path, names=col_names,  dtype=dtype, parse_dates=parse_dates, index_col=index, skipinitialspace=True) for file_path in file_paths)
+    if strip_cols != None:
+        df = strip_cols_in_df(df, strip_cols)
+    return df
 
-def load_and_process_csvs(file_paths):
+def load_and_process_csvs(file_paths, strip_cols=None):
     """
     Loads multiple csvs from differing data tables given from scotiabank (credit and debit)
     """
@@ -45,10 +48,19 @@ def load_and_process_csvs(file_paths):
 
         dfs_in.append(df)
     
-    return pd.concat(dfs_in)
-        
 
-def drop_dups(df, col_names, ignore_index=False):
+    df_out = pd.concat(dfs_in)
+    if strip_cols != None:
+        df_out = strip_cols_in_df(df_out, strip_cols)
+    return df_out
+        
+def strip_cols_in_df(df, cols):
+    for col in cols:
+        print(f"{df[col]} : {df[col].str.strip()}")
+        df[col] = df[col].str.strip()
+    return df
+
+def drop_dups(df, col_names, ignore_index=False, strip_col=None):
     """
     Drops any duplicates in a dataset, writes to file.
     """

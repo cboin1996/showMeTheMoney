@@ -162,7 +162,8 @@ def get_expenses_for_rows(df, stor_exp_data_path, stor_data_path, budg_path):
             df.at[idx, env.FILT_STORENAME] = storename
             df.at[idx, env.EXPENSE] = selected_exp  
     
-    print(f"\nFinished gathering your expense data: \n\n{df}")
+    print("\nFinished gathering your expense data: \n\n")
+    util.print_fulldf(df)
     return df
     
 def search_store_relationships(storename, exp_stor_db, budg_db, stor_exp_data_path, stor_db, stor_data_path):
