@@ -27,7 +27,7 @@ def declare_new_budget(date, exp_data):
     """
     Sets up an entirely new budget with expense categories for that month
     """
-    done_adding_budgets = False 
+
     exp_list  = exp_data[env.EXPENSE_DATA_KEY]
     local_budget = {}
     month_total = util.get_float_input(f"Please input your total for the month ending {date}: ", force_pos=True)
