@@ -174,7 +174,7 @@ def edit_cell_in_dfcol(db_data_filepath : str, df, col_name, opt_col, opt_dict):
     if indices != None:
         for index in indices:
             opt_key = df.loc[index, opt_col]
-            option = util.select_from_list(opt_dict[opt_key], "Please select an option for this cell (q) to quit: ", abortchar='q', ret_match=True)
+            option = util.select_from_list(opt_dict[opt_key], f"Please select an option for cell [{index}] col '{col_name}' or (q) to quit: ", abortchar='q', ret_match=True)
             if option != None:
                 df.at[index, col_name] = option
                 data_help.write_data(df, db_data_filepath)

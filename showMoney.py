@@ -214,9 +214,13 @@ def budg_plotter(df_to_plot, budget_df, df_inc, figsize=None, nrows=None, ncols=
         net_inc = round(month_inc_tot - month_exp_tot, 2)
         budg_re = round(budg_tot - month_exp_tot, 2)
 
-        title = title_templ % (f"{date.year}-{date.month}", month_inc_tot, month_exp_tot, budg_tot, net_inc, budg_re)
+        title = title_templ % (f"{date.month_name()} {date.year}", month_inc_tot, month_exp_tot, budg_tot, net_inc, budg_re)
         ax.set_title(title)
         sub_ax = sub_df.plot.bar(ax=ax)
+
+        for l in sub_ax.get_xticklabels():
+            l.set_rotation(45)
+            l.set_ha('right')
         for p in sub_ax.patches:
             ax.annotate(str(round(p.get_height(), 2)), (p.get_x()+p.get_width()/2., p.get_height()), 
                         ha='center', va='center', fontsize=7, fontweight='bold')
@@ -290,30 +294,32 @@ if __name__=="__main__":
         print("          ----|$$| MAIN MENU |$$|----         ")
         user_in = util.get_user_input_for_chars("Would you like to:\n(b) - backup data\n(e) - edit data\n(i) - import data\n(v) - view data\n(q) - quit?\nType here: ", ['b', 'e', 'i', 'v', 'q'])
         if user_in != 'q':
-
             ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths = find_data_paths(ndata_path, adata_path, db_exp_data_path, db_inc_data_path, output_str="LOCATING FILES")
 
-        if user_in == 'b':
+        if user_in == 'i': 
             backup_data([db_data_path, lib_data_path], backup_folderpath)
-        
-        elif user_in == 'e':
-            backup_data([db_data_path, lib_data_path], backup_folderpath)
-            edit_money_data(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path)
-
-        elif user_in == 'i':
             if check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adata_path, db_exp_data_path, db_inc_data_path):
-                backup_data([db_data_path, lib_data_path], backup_folderpath)
                 ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths = find_data_paths(ndata_path, adata_path, db_exp_data_path, db_inc_data_path, output_str="RECHECKING FILES")
                 get_expenses(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path)
                 get_income(db_inc_data_fpaths)
             else:
-                print("No data found. Please import some.")
-        elif user_in == 'v':
-            get_expenses(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path)
-            get_income(db_inc_data_fpaths)
-            view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path)
-        
-        elif user_in == 'q':
+                print(f"No data found. Please place files in {ndata_path} so I can eat.")
+
+        elif len(db_exp_data_fpaths) != 0: # if import wasnt selected and there is no data... skip running the program functions and warn user
+            if user_in == 'b':
+                backup_data([db_data_path, lib_data_path], backup_folderpath)
+            
+            elif user_in == 'e':
+                backup_data([db_data_path, lib_data_path], backup_folderpath)
+                edit_money_data(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path)
+            elif user_in == 'v':
+                get_expenses(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path)
+                get_income(db_inc_data_fpaths)
+                view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path)
+        else:
+            print(f"No data found. Please place files in {ndata_path} so I can eat.")
+
+        if user_in == 'q':
             print("Gone so soon? Ill be here if you need me. Goodby-")
             print("Transmission Terminated.")
             quit = True 
