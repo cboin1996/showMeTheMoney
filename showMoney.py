@@ -140,12 +140,9 @@ def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor
     """
     df_exp = data_help.load_csvs(db_exp_data_fpaths, dtype=env.SB_dtypes, parse_dates=env.SB_parse_dates, index=env.DATE)
     df_inc = data_help.load_csvs(db_inc_data_fpaths, dtype=env.INC_dtypes, parse_dates=env.SB_parse_dates, index=env.DATE) # TODO SHOW NET INCOME ON PLOTS
-    dates = data_help.extract_months(df_exp.index.to_series(), start=False)
-    expManager.get_budgets(budg_path, exp_path, dates) # check for any missing budgets either this month or any month in the data
     budg_db = data_help.read_jsonFile(budg_path) # load the budget data
     df_budg = pd.DataFrame(budg_db)
     years = data_help.extract_years(df_exp.index.to_series())
-    print(" --- --- --- --- ---")
     years_to_show = util.select_indices_of_list("Which of the above year(s) would you like to take a peak at? (e.g. 0 1 2): ", years, return_matches=True)
 
     for year in years_to_show:
@@ -251,6 +248,7 @@ def backup_data(folderpaths_to_backup, backup_folderpath):
     print(env.OUTPUT_SEP_STR)
 
 if __name__=="__main__":
+
     root = sys.path[0]
     data_path = os.path.join(root, 'data')
     ndata_path =  os.path.join(data_path, 'new')
