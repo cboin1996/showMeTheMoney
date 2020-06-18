@@ -105,7 +105,7 @@ def edit_money_data(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg
     Top level interface for editing databases
     """   
     prompt_chars = ['s', 'e', 'b', 'q']
-    user_in = util.get_user_input_for_chars("Would you like to edit: (s) - storenames, (b) - budget amounts or (e) - expense names (q) to quit? ", prompt_chars)
+    user_in = util.get_user_input_for_chars("Would you like to edit:\n(s) - storenames\n(b) - budget amounts\n(e) - expense names\n(q) to quit?\nType Here: ", prompt_chars)
     if user_in == 's':
         editor.store_editor(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path)
     elif user_in == 'e':
@@ -287,7 +287,8 @@ if __name__=="__main__":
     print("WELCOME TO SHOW ME YOUR MONEYYYYY COME ON DOWN!")
     quit = False
     while not quit:
-        user_in = util.get_user_input_for_chars("Would you like to (b) backup data (e) edit data, (i) import data, (v) view data or (q) quit? ", ['b', 'e', 'i', 'v', 'q'])
+        print("          ----|$$| MAIN MENU |$$|----         ")
+        user_in = util.get_user_input_for_chars("Would you like to:\n(b) - backup data\n(e) - edit data\n(i) - import data\n(v) - view data\n(q) - quit?\nType here: ", ['b', 'e', 'i', 'v', 'q'])
         if user_in != 'q':
 
             ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths = find_data_paths(ndata_path, adata_path, db_exp_data_path, db_inc_data_path, output_str="LOCATING FILES")
@@ -317,7 +318,5 @@ if __name__=="__main__":
             print("Transmission Terminated.")
             quit = True 
         
-        if user_in != 'q':
-            print("---- Done Iteration ----")
 
 # data_help.gather_store_db(df, os.path.join(sys.path[0], 'exp_stor_db.json'), 'StoreName', 'ExpenseName')

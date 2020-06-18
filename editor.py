@@ -72,7 +72,7 @@ def expenses_editor(exp_db_data_filepaths, stor_pair_path, exp_stor_data_path, b
         elif user_in == 'd':
             remove_expense_from_dbs(exp_db_data_filepaths[0], exp_stor_data, exp_data, budg_data, df, exp_stor_data_path, budg_path, exp_path)
         elif user_in == 'e':
-            edit_cell_in_dfcol(exp_db_data_filepaths[0], exp_data[env.EXPENSE_DATA_KEY], df, col_name=env.EXPENSE)
+            edit_cell_in_dfcol(exp_db_data_filepaths[0], df, col_name=env.EXPENSE, opt_col=env.FILT_STORENAME, opt_dict=exp_stor_data)
         elif user_in == 'q':
             done = True
         elif user_in == 's':
@@ -157,14 +157,24 @@ def remove_expense_from_dbs(exp_db_data_filepath, exp_stor_data, exp_data, budg_
     else:
         print(f"'{env.EXPENSE_MISC_STR}' is a reserved expense category, and it cannot be deleted.")
 
-def edit_cell_in_dfcol(db_data_filepath : str, options_for_cell, df, col_name):
+def edit_cell_in_dfcol(db_data_filepath : str, df, col_name, opt_col, opt_dict):
+    """
+    Edits a single cell in the df based upon options provided in opt_dict
+    params:
+        db_data_filepath - the path to the dataframes csv data
+        df - (DataFrame) object
+        col_name - the column to set the new value of
+        opt_col - the column to grab a key from to search opt_dict for the list of options
+        opt_dict - the dictionary containing the pairs between keys and options for a key
+    """
     index_list = df.index.tolist()
     print(df)
     prompt = "Select some indices from the above dataframe to edit: (q) to quit: "
     indices = util.select_indices_of_list(prompt, index_list, return_matches=True, abortable=True, abortchar='q', print_lst=False)
     if indices != None:
         for index in indices:
-            option = util.select_from_list(options_for_cell, "Please select an option for this cell (q) to quit: ", abortchar='q', ret_match=True)
+            opt_key = df.loc[index, opt_col]
+            option = util.select_from_list(opt_dict[opt_key], "Please select an option for this cell (q) to quit: ", abortchar='q', ret_match=True)
             if option != None:
                 df.at[index, col_name] = option
                 data_help.write_data(df, db_data_filepath)
@@ -238,9 +248,11 @@ def budget_editor(budg_path):
     Allows user to play around with the budget database
     """
     done = False 
-    prompt = "\nWould you like to \n(a) - change budget amounts\n(q) - quit?\nType here: "
+    
+    prompt = "Would you like to \n(a) - change budget amounts\n(q) - quit?\nType here: "
     while not done:
         budg_data = data_help.read_jsonFile(budg_path)
+        print(env.OUTPUT_SEP_STR)
         user_in = util.get_user_input_for_chars(prompt, ['a', 'q'])
         if user_in == 'a':
             change_budget_amounts(budg_data, budg_path)
@@ -252,6 +264,7 @@ def change_budget_amounts(budg_data, budg_path):
     """
     Changes budget amounts selected by the user
     """
+    print(env.OUTPUT_SEP_STR)
     prompt = "Which budget month would you like to edit eh? (q) to abort: "
     dates = util.select_indices_of_list(prompt, list(budg_data.keys()), return_matches=True, abortable=True, abortchar='q')
     if dates is not None: # none type returned if user aborts
