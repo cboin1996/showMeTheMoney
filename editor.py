@@ -6,6 +6,27 @@ import util
 import data_help
 import env
 import expManager
+
+def df_editor(df_filepaths):
+    """
+    Allows the editing of a dataframe
+    """
+    done = False
+    while not done:
+        df = data_help.load_csvs(df_filepaths, dtype=env.SB_dtypes, parse_dates=env.SB_parse_dates)
+        prompt = "Whould you like to: \n(a) - delete a row\n(q) - quit\nType here: "
+        user_in = util.get_user_input_for_chars(prompt, ['a', 'q'])
+
+        if user_in ==  'a':
+            util.print_fulldf(df)
+            edit_prompt = "Which row or rows would you like to delete (q) to abort? "
+            rows = util.select_indices_of_list(edit_prompt, list(df.index), abortable=True, abortchar='q', print_lst=False)
+            if rows is not None: # above returns none if user aborts
+                df.drop(index=rows, inplace=True)
+                data_help.write_data(df, df_filepaths[0])
+
+        elif user_in == 'q':
+            done = True
 def store_editor(exp_db_data_filepaths, stor_pair_path, exp_stor_data_path, budg_path):
     """
     Edits a store's name across all databases.
@@ -36,11 +57,12 @@ def change_storename(exp_db_data_filepaths, df, exp_stor_data, stor_data, stor_p
     if storename != None: # select_dict_key_using_integer returns none if quitstr is given
         new_name = util.prompt_with_warning("Please enter your new storename: ", ret_lowercase=True)
         if new_name != None: # none is returned from prompt_with_warning when user wants to abort.
+            print(f"--- Editing {env.OUT_EXP_DATA_TEMPL} --- ")
             edit_df_entries(df, exp_db_data_filepaths[0], env.FILT_STORENAME, storename, new_name)
-
+            print(f"--- Editing {env.STORE_PAIR_FNAME} --- ")
             stor_data = data_help.match_mod_dict_vals(stor_data, storename, new_name)
             data_help.write_to_jsonFile(stor_pair_path, stor_data)
-
+            print(f"--- Editing {env.EXP_STOR_DB_FNAME} --- ")
             exp_stor_data = data_help.modify_dict_key(exp_stor_data, storename, new_name)
             data_help.write_to_jsonFile(exp_stor_data_path, exp_stor_data)
 

@@ -100,19 +100,31 @@ def check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adat
     print(f"Data imported to {db_inc_data_path} and {db_exp_data_path}. Old files moved to {adata_path}")
     return True
 
-def edit_money_data(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path):
+def edit_money_data(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path, db_inc_data_fpaths):
     """
     Top level interface for editing databases
     """   
-    prompt_chars = ['s', 'e', 'b', 'q']
-    user_in = util.get_user_input_for_chars("Would you like to edit:\n(s) - storenames\n(b) - budget amounts\n(e) - expense names\n(q) to quit?\nType Here: ", prompt_chars)
-    if user_in == 's':
-        editor.store_editor(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path)
-    elif user_in == 'e':
-        editor.expenses_editor(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path)
-    elif user_in == 'b':
-        editor.budget_editor(budg_path)
-    
+    prompt = "Would you like to edit:\n(a) - storenames\n(b) - budget amounts\n(c) - expense names\n(d) - imported data\n(q) to quit?\nType Here: "
+    prompt_chars = ['a', 'b', 'c', 'd', 'q']
+    done = False
+    while not done:
+        print("          ----|$$| EDITOR MENU |$$|----         ")
+        user_in = util.get_user_input_for_chars(prompt, prompt_chars)
+        if user_in == 'a':
+            editor.store_editor(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path)
+        elif user_in == 'b':
+            editor.expenses_editor(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path)
+        elif user_in == 'c':
+            editor.budget_editor(budg_path)
+        elif user_in == 'd':
+            df_user_in = util.get_user_input_for_chars("Which dataset:\n(a) - income\n(b) - expenses\n(q) - quit\nType here: ", ['a', 'b', 'q'])
+            if df_user_in == 'a':
+                editor.df_editor(db_inc_data_fpaths)
+            elif df_user_in == 'b':
+                editor.df_editor(db_exp_data_fpaths)
+        elif user_in == 'q':
+            print("Exited editor.")
+            done = True
 
 def get_expenses(db_exp_data_fpaths: list, db_inc_data_fpaths: list, stor_pair_path: str, stor_exp_data_path : str, budg_path: str, exp_path: str):
     """
@@ -311,7 +323,7 @@ if __name__=="__main__":
             
             elif user_in == 'e':
                 backup_data([db_data_path, lib_data_path], backup_folderpath)
-                edit_money_data(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path)
+                edit_money_data(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path, db_inc_data_fpaths)
             elif user_in == 'v':
                 get_expenses(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path)
                 get_income(db_inc_data_fpaths)

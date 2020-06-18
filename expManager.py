@@ -182,20 +182,20 @@ def search_store_relationships(storename, exp_stor_db, budg_db, stor_exp_data_pa
     exps_fr_store = exp_stor_db[storename]
 
     if len(exps_fr_store) == 0:
-        selected_exps = util.select_indices_of_list(f"No expenses for {storename}. Please a or multiple to go with this store from now on.", 
+        selected_exps = util.select_indices_of_list(f"No expenses for '{storename}'. Please a or multiple to go with this store from now on.", 
                                                    list(budg_db.keys()),
                                                    return_matches=True)
         if len(selected_exps) == 1:
             selected_exp = selected_exps[0]
         else:
-            selected_exp = util.select_from_list(selected_exps, "Please select which expense you want for this transaction: ", ret_match=True)
+            selected_exp = util.select_from_list(selected_exps, f"Please select which expense you want for this transaction at {storename}: ", ret_match=True)
         exp_stor_db[storename] = selected_exps
         data_help.write_to_jsonFile(stor_exp_data_path, exp_stor_db)
 
     elif len(exps_fr_store) == 1:
         selected_exp = exps_fr_store[0]
     else:
-        selected_exp = exps_fr_store[select_expense_idx(exps_fr_store, storename)]
+        selected_exp = exps_fr_store[util.select_from_list(exps_fr_store, f"Please select an expense for this transaction at {storename}: ")]
 
     return selected_exp, dict(exp_stor_db), stor_db, storename
     
@@ -220,10 +220,5 @@ def select_store_for_purchase(storename, stor_data_path, stor_db, exp_stor_db, s
     
     return matched_storename, stor_db, exp_stor_db
 
-def select_expense_idx(exps_fr_store, storename):
-    """
-    Gets the index of an expense to select from the user
-    """
-    selection_idx = util.select_from_list(exps_fr_store, f"Multiple expenses for store '{storename}'. Select one please: ")
-    return selection_idx
+
 
