@@ -13,13 +13,13 @@ An CLI app used for inputting banking data and plotting graphs for budgeting pur
 git clone https://github.com/cboin1996/showMeTheMoney.git
 ```
 2. navigate to the folder and:  
-  a. (optional) if using virtual env  
+  - a. (optional) if using virtual env  
 ```
 python -m venv venv
 venv\Scripts\activate - windows
 source\venv\activate - linux/mac
 ```
-  b.
+  - b.
 ```bash
 python setup.py install
 ```
@@ -73,14 +73,14 @@ The 'lib' folder contains four files: expenses.json, Budget.json, storePairs.jso
 Each file plays a crucial role in the parsing of raw bank data, and is considered your apps's brain.  
 
 a. expenses.json  
-  contains the list of expenses declared  
+  - contains the list of expenses declared  
 b. Budget.json  
-  contains monthly budgets with money amounts paired to the expenses from expenses.json  
+  - contains monthly budgets with money amounts paired to the expenses from expenses.json  
 c. storePairs.json  
-  Used as the hub for remember all the variable storenames and relating them to a single storename
-  e.g. amazon transactions show up as amaz*on, or amaz*on mkt*pl etc.  These are hard to predict and filter for, so the app asks the user to match these tougher storenames to either an existing one or create a new one.  This way, if that storename shows up again, the app knows how to handle it, and what epenses go with it.  
+  - Used as the hub for remember all the variable storenames and relating them to a single storename
+  - e.g. amazon transactions show up as amaz\*on, or amaz\*on mkt*pl etc.  These are hard to predict and filter for, so the app asks the user to match these tougher storenames to either an existing one or create a new one.  This way, if that storename shows up again, the app knows how to handle it, and what epenses go with it.  
 d. storesWithExpenses.json  
-  Used to pair the storenames declared by the user to expenses selected from expenses.json  
+  - Used to pair the storenames declared by the user to expenses selected from expenses.json  
 
 The 'db' folder contains two sub folders.. one for income and one for expenses.  Upon import, the raw data is filtered and split into income and expenses, and saved in these respective folders
 
@@ -90,17 +90,17 @@ A lot of work was put into ensuring that your data may be managed.  From experie
 The editor provides the following functionality:  
 
 a. storename editing  
-  a. changing of storenames  
+  - a. changing of storenames  
 b. budget editing  
-  a. changing the dollar amounts in a month's budget  
+  - a. changing the dollar amounts in a month's budget  
 c. expense editing  
-  a. add an expense to expenses.json  
-  b. edit an expenses name  
-  c. pair expense(s) to stores  
-  d. delete an expense from the database  
-  e. edit an expense within the data frame  
+  - a. add an expense to expenses.json  
+  - b. edit an expenses name  
+  - c. pair expense(s) to stores  
+  - d. delete an expense from the database  
+  - e. edit an expense within the data frame  
 d. database editing (db/expenses/ or db/income/)  
-  a. Delete a row from the database  
+  - a. Delete a row from the database  
 
 Its important to understand that the editor should be the only way the user edits any data.  The databases are all related to each other somehow, and so if you were to manually change an expense name you would have to find and replace the change manually across all databases for example.  Using the editor makes editing simple (at least to me).  
 
