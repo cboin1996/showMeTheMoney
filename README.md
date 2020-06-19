@@ -19,7 +19,10 @@ git clone https://github.com/cboin1996/showMeTheMoney.git
     venv\Scripts\activate - windows
     source\venv\activate - linux/mac
     ```
-  - ```bash python setup.py install```
+  - Run setup script
+    ```bash 
+    python setup.py install
+    ```
 ### Run
 ```bash
 python showMoney.py
