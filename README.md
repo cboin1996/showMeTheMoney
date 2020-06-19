@@ -72,14 +72,14 @@ The 'lib' folder contains four files: expenses.json, Budget.json, storePairs.jso
 
 Each file plays a crucial role in the parsing of raw bank data, and is considered your apps's brain.  
 
-a. expenses.json  
+- expenses.json  
   - contains the list of expenses declared  
-b. Budget.json  
+- Budget.json  
   - contains monthly budgets with money amounts paired to the expenses from expenses.json  
-c. storePairs.json  
+- storePairs.json  
   - Used as the hub for remember all the variable storenames and relating them to a single storename
   - e.g. amazon transactions show up as amaz\*on, or amaz\*on mkt*pl etc.  These are hard to predict and filter for, so the app asks the user to match these tougher storenames to either an existing one or create a new one.  This way, if that storename shows up again, the app knows how to handle it, and what epenses go with it.  
-d. storesWithExpenses.json  
+- storesWithExpenses.json  
   - Used to pair the storenames declared by the user to expenses selected from expenses.json  
 
 The 'db' folder contains two sub folders.. one for income and one for expenses.  Upon import, the raw data is filtered and split into income and expenses, and saved in these respective folders
@@ -89,18 +89,18 @@ A lot of work was put into ensuring that your data may be managed.  From experie
 
 The editor provides the following functionality:  
 
-a. storename editing  
-  - a. changing of storenames  
-b. budget editing  
-  - a. changing the dollar amounts in a month's budget  
-c. expense editing  
-  - a. add an expense to expenses.json  
-  - b. edit an expenses name  
-  - c. pair expense(s) to stores  
-  - d. delete an expense from the database  
-  - e. edit an expense within the data frame  
-d. database editing (db/expenses/ or db/income/)  
-  - a. Delete a row from the database  
+- storename editing  
+  - changing of storenames  
+- budget editing  
+  - changing the dollar amounts in a month's budget  
+- expense editing  
+  - add an expense to expenses.json  
+  - edit an expenses name  
+  - pair expense(s) to stores  
+  - delete an expense from the database  
+  - edit an expense within the data frame  
+- database editing (db/expenses/ or db/income/)  
+  - Delete a row from the database  
 
 Its important to understand that the editor should be the only way the user edits any data.  The databases are all related to each other somehow, and so if you were to manually change an expense name you would have to find and replace the change manually across all databases for example.  Using the editor makes editing simple (at least to me).  
 
