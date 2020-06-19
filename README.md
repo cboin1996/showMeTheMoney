@@ -13,16 +13,13 @@ An CLI app used for inputting banking data and plotting graphs for budgeting pur
 git clone https://github.com/cboin1996/showMeTheMoney.git
 ```
 2. navigate to the folder and:  
-  - a. (optional) if using virtual env  
-```
-python -m venv venv
-venv\Scripts\activate - windows
-source\venv\activate - linux/mac
-```
-  - b.
-```bash
-python setup.py install
-```
+  - (optional) if using virtual env  
+    ```bash 
+    python -m venv venv
+    venv\Scripts\activate - windows
+    source\venv\activate - linux/mac
+    ```
+  - ```bash python setup.py install```
 ### Run
 ```bash
 python showMoney.py
