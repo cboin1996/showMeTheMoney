@@ -8,6 +8,15 @@ import env
 import util
 import re
 
+def print_file(file_path):
+    """
+    Generic file loader
+    """
+    with open(file_path, 'r') as f:
+        print("--- --- DOCS START --- ---")
+        print(f.read())
+        print("--- --- DOCS END --- ---")
+
 def load_csv(file_path, col_names=None, index_col=None, dtype=None, parse_dates=None):
     """
     Loads a csv into a dataframe

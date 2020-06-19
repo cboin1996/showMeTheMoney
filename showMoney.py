@@ -113,9 +113,9 @@ def edit_money_data(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg
         if user_in == 'a':
             editor.store_editor(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path)
         elif user_in == 'b':
-            editor.expenses_editor(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path)
-        elif user_in == 'c':
             editor.budget_editor(budg_path)
+        elif user_in == 'c':
+            editor.expenses_editor(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path)
         elif user_in == 'd':
             df_user_in = util.get_user_input_for_chars("Which dataset:\n(a) - income\n(b) - expenses\n(q) - quit\nType here: ", ['a', 'b', 'q'])
             if df_user_in == 'a':
@@ -274,6 +274,7 @@ if __name__=="__main__":
     db_exp_data_path = os.path.join(db_data_path, 'expenses')
     db_inc_data_path = os.path.join(db_data_path, 'income')
     lib_data_path = os.path.join(root, 'lib')
+    help_doc_path = os.path.join(root, 'README.md')
 
     list_of_dirs = [data_path,
                     ndata_path,
@@ -304,7 +305,10 @@ if __name__=="__main__":
     quit = False
     while not quit:
         print("          ----|$$| MAIN MENU |$$|----         ")
-        user_in = util.get_user_input_for_chars("Would you like to:\n(b) - backup data\n(e) - edit data\n(i) - import data\n(v) - view data\n(q) - quit?\nType here: ", ['b', 'e', 'i', 'v', 'q'])
+        user_in = util.get_user_input_for_chars("Would you like to:\n(b) - backup data\n(e) - edit data\n(i) - import data\n(v) - view data\n(h) - print help docs\n(q) - quit?\nType here: ", ['b', 'e', 'i', 'v', 'h', 'q'])
+        if user_in == 'h':
+            data_help.print_file(help_doc_path)
+        
         if user_in != 'q':
             ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths = find_data_paths(ndata_path, adata_path, db_exp_data_path, db_inc_data_path, output_str="LOCATING FILES")
 
@@ -335,6 +339,6 @@ if __name__=="__main__":
             print("Gone so soon? Ill be here if you need me. Goodby-")
             print("Transmission Terminated.")
             quit = True 
-        
+    
 
 # data_help.gather_store_db(df, os.path.join(sys.path[0], 'exp_stor_db.json'), 'StoreName', 'ExpenseName')

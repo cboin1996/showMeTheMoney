@@ -182,7 +182,7 @@ def search_store_relationships(storename, exp_stor_db, budg_db, stor_exp_data_pa
     exps_fr_store = exp_stor_db[storename]
 
     if len(exps_fr_store) == 0:
-        selected_exps = util.select_indices_of_list(f"No expenses for '{storename}'. Please a or multiple to go with this store from now on.", 
+        selected_exps = util.select_indices_of_list(f"No expenses for '{storename}'. Please select one or multiple to go with this store from now on.", 
                                                    list(budg_db.keys()),
                                                    return_matches=True)
         if len(selected_exps) == 1:
