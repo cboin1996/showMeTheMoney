@@ -131,9 +131,8 @@ def get_expenses(db_exp_data_fpaths: list, db_inc_data_fpaths: list, stor_pair_p
     main method for the importing of expense data
     """
     exp_df = data_help.load_csvs(db_exp_data_fpaths, dtype=env.SB_dtypes, parse_dates=env.SB_parse_dates)# only using on csv db for now. newest will be last? idk verify later.
-    print("\nRemoving the below expense transactions as they are either an internal bank acct transfer, cash advance or credit payment.")
-    util.print_fulldf(exp_df[exp_df[env.BANK_STORENAME].str.contains("|".join(env.IGNORABLE_TRANSACTIONS))])
-    exp_df = exp_df[~exp_df[env.BANK_STORENAME].str.contains("|".join(env.IGNORABLE_TRANSACTIONS))] # filter out any credit payments from debit to here.
+    exp_df = data_help.drop_for_substring(exp_df, env.BANK_STORENAME, env.IGNORABLE_TRANSACTIONS, 
+                                          "\nRemoving the below expense transactions as they are either an internal bank acct transfer, cash advance or credit payment.")
     dates = data_help.extract_months(exp_df[env.DATE], start=False)
     expManager.get_budgets(budg_path, exp_path, dates) # check for any missing budgets either this month or any month in the data
     exp_df = expManager.get_expenses_for_rows(exp_df, stor_exp_data_path, stor_pair_path, budg_path)
@@ -145,8 +144,8 @@ def get_income(db_inc_data_fpaths: list):
     """
     inc_df = data_help.load_csvs(db_inc_data_fpaths, dtype=env.INC_dtypes, parse_dates=env.SB_parse_dates)
     print("\nRemoving the below income transactions as they are either an internal bank acct transfer, cash advance or credit payment.")
-    util.print_fulldf(inc_df[inc_df[env.BANK_STORENAME].str.contains("|".join(env.IGNORABLE_TRANSACTIONS))])
-    inc_df = inc_df[~inc_df[env.BANK_STORENAME].str.contains("|".join(env.IGNORABLE_TRANSACTIONS))] # filter out any credit payments from debit to here.
+    inc_df = data_help.drop_for_substring(inc_df, env.BANK_STORENAME, env.IGNORABLE_TRANSACTIONS, 
+                                          "\nRemoving the below income transactions as they are either an internal bank acct transfer, cash advance or credit payment.")
     data_help.write_data(inc_df, db_inc_data_fpaths[0])
     print("Finished gathering your income data: \n")
     util.print_fulldf(inc_df)

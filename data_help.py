@@ -69,6 +69,19 @@ def strip_cols_in_df(df, cols):
         df[col] = df[col].str.strip()
     return df
 
+def drop_for_substring(df, col_name, lst_of_substrs, str_out=''):
+    """
+    Drops any matched for a list of substrings within the dataframe, returns the df
+    """
+    
+    df_to_drop = df[df[col_name].str.contains("|".join(lst_of_substrs))]
+    if df_to_drop.empty:
+        print("No Transactions to remove.")
+    else:
+        print(str_out)
+        util.print_fulldf(df_to_drop)
+        df = df[~df[col_name].str.contains("|".join(lst_of_substrs))] # filter out any credit payments from debit to here.
+    return df
 def drop_dups(df, col_names, ignore_index=False, strip_col=None):
     """
     Drops any duplicates in a dataset, writes to file.

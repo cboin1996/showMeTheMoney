@@ -67,16 +67,20 @@ EXPENSE_DATA_KEY = 'expense'
 BUDGET_TOTAL_KEY = 'total'
 """
 IGNORABLE_TRANSACTIONS:
-
+DEBIT
 'MB-CREDIT CARD/LOC PAY.' - Credit payments rec'v by credit card or paid by debit (can be ignored since credit card transactions are imported and accounted for, thus payments need not be)
-'PC - PAYMENT FROM' - 
 'MB-TRANSFER' - Transfer of money between two Scotia accounts
-'PC - FROM' - Transfer of money between two Scotia accounts
-'MB-CASH ADVANCE' - Any cash advances taken from credit cards (the money from these are used to pay for items, and then are paid off by MB-CREDIT CARD/LOC PAY. Thus can be ignored, 
+'PC FROM' - Transfer of money between two Scotia accounts
+'PC TO' - Transfer of money between two Scotia accounts
+'MB-CASH ADVANCE' - Any cash advances taken from credit cards into a debit account (the money from these are used to pay for items, and then are paid off by MB-CREDIT CARD/LOC PAY. Thus can be ignored, 
                     as only the expense needs tracked)
-
+CREDIT
+'MB - CASH ADVANCE' - Any cash advances on a credit card's statement (appears with space here instead of just dash)
+'PC - PAYMENT FROM' - Any credit card payments
 """
-SCOTIA_IGNORABLE_TRANSACTIONS = ['MB-CREDIT CARD/LOC PAY.', 'PC - PAYMENT FROM', 'MB-TRANSFER', 'PC - FROM', 'MB-CASH ADVANCE']
+
+SCOTIA_IGNORABLE_TRANSACTIONS = ['MB-CREDIT CARD/LOC PAY.', 'MB-TRANSFER', 'PC TO', 'PC FROM', 'MB-CASH ADVANCE', 
+                                 'MB - CASH ADVANCE', 'PC - PAYMENT FROM']
 IGNORABLE_TRANSACTIONS = SCOTIA_IGNORABLE_TRANSACTIONS # FOR FUTURE JUST + NEW ARRAYS OF IGNORABLE TRANSACTIONS
 
 EXPENSE_MISC_STR = "Misc"
