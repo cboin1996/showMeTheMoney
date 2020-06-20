@@ -170,7 +170,7 @@ def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor
     for year in years_to_show:
         df_exp = df_exp[year]
 
-        if year in df_inc.index.values: # if income is not present for this expense year, then set amount to 0.
+        if year in df_inc.index: # if income is not present for this expense year, then set amount to 0.
             df_inc = df_inc[year]
         else:
             df_inc.loc[year, env.AMOUNT] = 0
