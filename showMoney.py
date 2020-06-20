@@ -131,7 +131,7 @@ def get_expenses(db_exp_data_fpaths: list, db_inc_data_fpaths: list, stor_pair_p
     main method for the importing of expense data
     """
     exp_df = data_help.load_csvs(db_exp_data_fpaths, dtype=env.SB_dtypes, parse_dates=env.SB_parse_dates)# only using on csv db for now. newest will be last? idk verify later.
-    print("\nRemoving the below expense transactions as they are either an internal bank acct transfer or credit payment.")
+    print("\nRemoving the below expense transactions as they are either an internal bank acct transfer, cash advance or credit payment.")
     util.print_fulldf(exp_df[exp_df[env.BANK_STORENAME].str.contains("|".join(env.IGNORABLE_TRANSACTIONS))])
     exp_df = exp_df[~exp_df[env.BANK_STORENAME].str.contains("|".join(env.IGNORABLE_TRANSACTIONS))] # filter out any credit payments from debit to here.
     dates = data_help.extract_months(exp_df[env.DATE], start=False)
@@ -144,7 +144,7 @@ def get_income(db_inc_data_fpaths: list):
     main method for the importing of income data
     """
     inc_df = data_help.load_csvs(db_inc_data_fpaths, dtype=env.INC_dtypes, parse_dates=env.SB_parse_dates)
-    print("\nRemoving the below income transactions as they are either an internal bank acct transfer or credit payment.")
+    print("\nRemoving the below income transactions as they are either an internal bank acct transfer, cash advance or credit payment.")
     util.print_fulldf(inc_df[inc_df[env.BANK_STORENAME].str.contains("|".join(env.IGNORABLE_TRANSACTIONS))])
     inc_df = inc_df[~inc_df[env.BANK_STORENAME].str.contains("|".join(env.IGNORABLE_TRANSACTIONS))] # filter out any credit payments from debit to here.
     data_help.write_data(inc_df, db_inc_data_fpaths[0])
