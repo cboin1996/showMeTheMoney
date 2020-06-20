@@ -143,7 +143,6 @@ def get_income(db_inc_data_fpaths: list):
     main method for the importing of income data
     """
     inc_df = data_help.load_csvs(db_inc_data_fpaths, dtype=env.INC_dtypes, parse_dates=env.SB_parse_dates)
-    print("\nRemoving the below income transactions as they are either an internal bank acct transfer, cash advance or credit payment.")
     inc_df = data_help.drop_for_substring(inc_df, env.BANK_STORENAME, env.IGNORABLE_TRANSACTIONS, 
                                           "\nRemoving the below income transactions as they are either an internal bank acct transfer, cash advance or credit payment.")
     data_help.write_data(inc_df, db_inc_data_fpaths[0])
@@ -156,16 +155,26 @@ def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor
     """
     df_exp = data_help.load_csvs(db_exp_data_fpaths, dtype=env.SB_dtypes, parse_dates=env.SB_parse_dates, index=env.DATE)
     df_inc = data_help.load_csvs(db_inc_data_fpaths, dtype=env.INC_dtypes, parse_dates=env.SB_parse_dates, index=env.DATE) # TODO SHOW NET INCOME ON PLOTS
+    
+    if df_inc.empty: # set index to datetime if empty.
+        df_inc.set_index(pd.to_datetime(df_inc.index), inplace=True)
+    
     budg_db = data_help.read_jsonFile(budg_path) # load the budget data
     df_budg = pd.DataFrame(budg_db)
+    df_budg = df_budg.T # transpose to make index date str
+    df_budg.set_index(pd.to_datetime(df_budg.index), inplace=True) # set index to date time
+
     years = data_help.extract_years(df_exp.index.to_series())
     years_to_show = util.select_indices_of_list("Which of the above year(s) would you like to take a peak at? (e.g. 0 1 2): ", years, return_matches=True)
-
+    
     for year in years_to_show:
         df_exp = df_exp[year]
-        df_inc = df_inc[year]
-        df_budg = df_budg.T # transpose to make index date str
-        df_budg.set_index(pd.to_datetime(df_budg.index), inplace=True) # set index to date time
+
+        if year in df_inc.index.values: # if income is not present for this expense year, then set amount to 0.
+            df_inc = df_inc[year]
+        else:
+            df_inc.loc[year, env.AMOUNT] = 0
+        
         df_budg = df_budg[year] # filter for the year
         df_budg = df_budg.stack().apply(pd.Series).rename(columns={0:env.BUDGET}) # collapse data into multindex frame
 

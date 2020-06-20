@@ -54,7 +54,6 @@ def prompt_for_budget_amnt(prompt, budg_remaining, exp_data):
     """
     Gathers a budget entry of str:float type from user input, ensuring it is not over the months totaL
     """
-    print("Input your expense name and budget separated by a space (food 150)")
     flag = False 
     while not flag:
         budget_amnt = util.get_float_input(prompt, force_pos=True)
