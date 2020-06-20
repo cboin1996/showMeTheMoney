@@ -134,10 +134,6 @@ def get_expenses_for_rows(df, stor_exp_data_path, stor_data_path, budg_path):
                 if match:
 
                     processed_text = util.process_text(match.group(0))
-                    if processed_text in env.IGNORABLE_TRANSACTIONS: # drop a transaction from the frame if it is ignorable such as credit card payments etc.
-                        print(f"Dropping df entry at idx [{idx}] due it being an internal scotia transfer, or credit payments!")
-                        df.drop(idx, inplace=True)
-                        continue
                     # print(f"Was able to filter - {row[env.BANK_STORENAME]} -> {processed_text}")
                     storename = processed_text
                         
