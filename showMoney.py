@@ -146,7 +146,7 @@ def get_income(db_inc_data_fpaths: list):
     inc_df = data_help.drop_for_substring(inc_df, env.BANK_STORENAME, env.IGNORABLE_TRANSACTIONS, 
                                           "\nRemoving the below income transactions as they are either an internal bank acct transfer, cash advance or credit payment.")
     data_help.write_data(inc_df, db_inc_data_fpaths[0])
-    print("Finished gathering your income data: \n")
+    print("\nFinished gathering your income data: \n")
     util.print_fulldf(inc_df)
 
 def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path):
@@ -168,23 +168,18 @@ def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor
     years_to_show = util.select_indices_of_list("Which of the above year(s) would you like to take a peak at? (e.g. 0 1 2): ", years, return_matches=True)
     
     for year in years_to_show:
-        df_exp = df_exp[year]
-
-        if year in df_inc.index: # if income is not present for this expense year, then set amount to 0.
-            df_inc = df_inc[year]
-        else:
-            df_inc.loc[year, env.AMOUNT] = 0
-        
-        df_budg = df_budg[year] # filter for the year
-        df_budg = df_budg.stack().apply(pd.Series).rename(columns={0:env.BUDGET}) # collapse data into multindex frame
-
+        df_inc = df_inc[year] # filter for the year
         print("\nAll Income this year. ")
         util.print_fulldf(df_inc)
         print("Income grouped by month and store")
         df_inc_per_month = df_inc.groupby([pd.Grouper(freq='M'), env.BANK_STORENAME]).sum()
         util.print_fulldf(df_inc_per_month)
 
-        print("All transaction this year.")
+        df_budg = df_budg[year] 
+        df_budg = df_budg.stack().apply(pd.Series).rename(columns={0:env.BUDGET}) # collapse data into multindex frame
+
+        df_exp = df_exp[year]
+        print("All transactions this year.")
         util.print_fulldf(df_exp)
 
         print("Totals by store grouped per month.")
@@ -234,7 +229,12 @@ def budg_plotter(df_to_plot, budget_df, df_inc, figsize=None, nrows=None, ncols=
         ax = plt.subplot(nrows, ncols, plot_idx)
 
         month_exp_tot = round(budget_df.loc[f"{date.year}-{date.month}", env.AMOUNT].sum(), 2)
-        month_inc_tot = round(df_inc.loc[f"{date.year}-{date.month}", env.AMOUNT].sum(),2)
+
+        if f"{date.year}-{date.month}" in df_inc.index: # detect whether there was income that month.
+            month_inc_tot = round(df_inc.loc[f"{date.year}-{date.month}", env.AMOUNT].sum(),2)
+        else:
+            month_inc_tot = 0
+
         budg_tot = round(budget_df.loc[f"{date.year}-{date.month}", env.BUDGET].sum(), 2)
         net_inc = round(month_inc_tot - month_exp_tot, 2)
         budg_re = round(budg_tot - month_exp_tot, 2)
