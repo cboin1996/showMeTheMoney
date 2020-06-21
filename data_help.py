@@ -57,7 +57,6 @@ def load_and_process_csvs(file_paths, strip_cols=None):
 
         dfs_in.append(df)
     
-
     df_out = pd.concat(dfs_in)
     if strip_cols != None:
         df_out = strip_cols_in_df(df_out, strip_cols)
@@ -66,7 +65,9 @@ def load_and_process_csvs(file_paths, strip_cols=None):
 def strip_cols_in_df(df, cols):
     for col in cols:
         # print(f"{df[col]} : {df[col].str.strip()}")
-        df[col] = df[col].str.strip()
+        if not df[col].isnull().all(): # make sure that not all values are null in the column.
+            df[col] = df[col].str.strip()
+
     return df
 
 def drop_for_substring(df, col_name, lst_of_substrs, str_out=''):

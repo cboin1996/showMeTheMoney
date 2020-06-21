@@ -77,7 +77,7 @@ def check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adat
         df_inc = pd.concat([df_inc, df_inc_new])
 
     elif len(ndata_filepaths) != 0:
-        df_new = data_help.load_and_process_csvs(file_paths=ndata_filepaths)
+        df_new = data_help.load_and_process_csvs(file_paths=ndata_filepaths, strip_cols=[env.TYPE, env.BANK_STORENAME])
         df_inc, df_exp = data_help.filter_by_amnt(df_new, col_name=env.AMOUNT)
         df_exp.loc[:, env.EXPENSE] = np.nan # add NaN column to the expense df.
         df_exp.loc[:, env.FILT_STORENAME] = np.nan
@@ -111,7 +111,7 @@ def edit_money_data(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg
         print("          ----|$$| EDITOR MENU |$$|----         ")
         user_in = util.get_user_input_for_chars(prompt, prompt_chars)
         if user_in == 'a':
-            editor.store_editor(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path)
+            editor.store_editor(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path)
         elif user_in == 'b':
             editor.budget_editor(budg_path)
         elif user_in == 'c':
@@ -165,39 +165,40 @@ def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor
     df_budg.set_index(pd.to_datetime(df_budg.index), inplace=True) # set index to date time
 
     years = data_help.extract_years(df_exp.index.to_series())
-    years_to_show = util.select_indices_of_list("Which of the above year(s) would you like to take a peak at? (e.g. 0 1 2): ", years, return_matches=True)
+    years_to_show = util.select_indices_of_list("Which of the above year(s) would you like to take a peak at - or 'q' to quit: ", years, return_matches=True, abortable=True, abortchar='q')
+    if years_to_show is not None: # select_indices_of_list returns None if user aborts
+        for year in years_to_show:
+            df_inc = df_inc[year] # filter for the year
+            print("\nAll Income this year. ")
+            util.print_fulldf(df_inc)
+            print("Income grouped by month and store")
+            df_inc_per_month = df_inc.groupby([pd.Grouper(freq='M'), env.BANK_STORENAME]).sum()
+            util.print_fulldf(df_inc_per_month)
+
+            df_budg = df_budg[year] 
+            df_budg = df_budg.stack().apply(pd.Series).rename(columns={0:env.BUDGET}) # collapse data into multindex frame
+
+            df_exp = df_exp[year]
+            print("All transactions this year.")
+            util.print_fulldf(df_exp)
+
+            print("Totals by store grouped per month.")
+            df_exp_stor_per_month = df_exp.groupby([pd.Grouper(freq="M"), env.EXPENSE, env.FILT_STORENAME]).sum()
+            util.print_fulldf(df_exp_stor_per_month)
+
+            print("Totals by expense grouped per month with budgets")
+            df_exp_per_month = df_exp.groupby([pd.Grouper(freq="M"), env.EXPENSE]).sum()
+            df_exp_budg_per_month = pd.concat([df_exp_per_month, df_budg], axis=1)
+            df_exp_budg_per_month[env.AMOUNT] = df_exp_budg_per_month[env.AMOUNT].fillna(0)
+            df_exp_budg_per_month[env.REMAINING] = df_exp_budg_per_month[env.BUDGET] - df_exp_budg_per_month[env.AMOUNT]
+            util.print_fulldf(df_exp_budg_per_month)
+
+            title_templ = "%s\nIncome: %s | Expenses: %s | Budget: %s\nNet Income: %s | Budget Rem.: %s"
+            budg_plotter(df_exp_budg_per_month, df_exp_budg_per_month.groupby(level=0).sum(), df_inc, (15,12), nrows=3, ncols=1, 
+                        subfigs_per_fig=3, title_templ=title_templ, show=False, sort_by_level=0)
+            budg_plotter(df_exp_stor_per_month, df_exp_budg_per_month.groupby(level=0).sum(), df_inc, (15,12), nrows=3, ncols=1, 
+                        subfigs_per_fig=3, title_templ=title_templ, show=True, sort_by_level=0)
     
-    for year in years_to_show:
-        df_inc = df_inc[year] # filter for the year
-        print("\nAll Income this year. ")
-        util.print_fulldf(df_inc)
-        print("Income grouped by month and store")
-        df_inc_per_month = df_inc.groupby([pd.Grouper(freq='M'), env.BANK_STORENAME]).sum()
-        util.print_fulldf(df_inc_per_month)
-
-        df_budg = df_budg[year] 
-        df_budg = df_budg.stack().apply(pd.Series).rename(columns={0:env.BUDGET}) # collapse data into multindex frame
-
-        df_exp = df_exp[year]
-        print("All transactions this year.")
-        util.print_fulldf(df_exp)
-
-        print("Totals by store grouped per month.")
-        df_exp_stor_per_month = df_exp.groupby([pd.Grouper(freq="M"), env.EXPENSE, env.FILT_STORENAME]).sum()
-        util.print_fulldf(df_exp_stor_per_month)
-
-        print("Totals by expense grouped per month with budgets")
-        df_exp_per_month = df_exp.groupby([pd.Grouper(freq="M"), env.EXPENSE]).sum()
-        df_exp_budg_per_month = pd.concat([df_exp_per_month, df_budg], axis=1)
-        df_exp_budg_per_month[env.AMOUNT] = df_exp_budg_per_month[env.AMOUNT].fillna(0)
-        df_exp_budg_per_month[env.REMAINING] = df_exp_budg_per_month[env.BUDGET] - df_exp_budg_per_month[env.AMOUNT]
-        util.print_fulldf(df_exp_budg_per_month)
-
-        title_templ = "%s\nIncome: %s | Expenses: %s | Budget: %s\nNet Income: %s | Budget Rem.: %s"
-        budg_plotter(df_exp_budg_per_month, df_exp_budg_per_month.groupby(level=0).sum(), df_inc, (15,12), nrows=3, ncols=1, 
-                     subfigs_per_fig=3, title_templ=title_templ, show=False, sort_by_level=0)
-        budg_plotter(df_exp_stor_per_month, df_exp_budg_per_month.groupby(level=0).sum(), df_inc, (15,12), nrows=3, ncols=1, 
-                     subfigs_per_fig=3, title_templ=title_templ, show=True, sort_by_level=0)
 
 def budg_plotter(df_to_plot, budget_df, df_inc, figsize=None, nrows=None, ncols=None, subfigs_per_fig=None, title_templ="", show=True, sort_by_level=None):
     """
@@ -329,8 +330,9 @@ if __name__=="__main__":
             backup_data([db_data_path, lib_data_path], backup_folderpath)
             if check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adata_path, db_exp_data_path, db_inc_data_path):
                 ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths = find_data_paths(ndata_path, adata_path, db_exp_data_path, db_inc_data_path, output_str="RECHECKING FILES")
-                get_expenses(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path)
                 get_income(db_inc_data_fpaths)
+                get_expenses(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path)
+                
             else:
                 print(f"No data found. Please place files in {ndata_path} so I can eat.")
 
@@ -342,8 +344,8 @@ if __name__=="__main__":
                 backup_data([db_data_path, lib_data_path], backup_folderpath)
                 edit_money_data(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path, db_inc_data_fpaths)
             elif user_in == 'v':
-                get_expenses(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path)
                 get_income(db_inc_data_fpaths)
+                get_expenses(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path)
                 view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path)
         else:
             print(f"No data found. Please place files in {ndata_path} so I can eat.")

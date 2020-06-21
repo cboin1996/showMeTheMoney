@@ -27,7 +27,7 @@ def df_editor(df_filepaths):
 
         elif user_in == 'q':
             done = True
-def store_editor(exp_db_data_filepaths, stor_pair_path, exp_stor_data_path, budg_path):
+def store_editor(exp_db_data_filepaths, stor_pair_path, exp_stor_data_path, budg_path, exp_path):
     """
     Edits a store's name across all databases.
     params:
@@ -42,12 +42,16 @@ def store_editor(exp_db_data_filepaths, stor_pair_path, exp_stor_data_path, budg
         df = data_help.load_csvs(exp_db_data_filepaths, dtype=env.SB_dtypes, parse_dates=env.SB_parse_dates)
         stor_data = data_help.read_jsonFile(stor_pair_path)
         exp_stor_data = data_help.read_jsonFile(exp_stor_data_path)
+        exp_data = data_help.read_jsonFile(exp_path)
+        budg_db = data_help.read_jsonFile(budg_path)
 
-        prompt = "Would you like to: \n(a) - change a storename\n(q) - quit\ntype here: "
+        prompt = "Would you like to: \n(a) - change a storename\n(b) - edit bank to database store relationships\n(q) - quit\ntype here: "
         user_in = util.get_user_input_for_chars(prompt, ['a', 'b', 'q'])
 
         if user_in == 'a':
             change_storename(exp_db_data_filepaths, df, exp_stor_data, stor_data, stor_pair_path, exp_stor_data_path)
+        elif user_in == 'b':
+            change_storepair(exp_db_data_filepaths, df, exp_stor_data, stor_data, stor_pair_path, exp_stor_data_path, exp_data, budg_db)
         elif user_in == 'q':
             done = True
     return
@@ -66,6 +70,48 @@ def change_storename(exp_db_data_filepaths, df, exp_stor_data, stor_data, stor_p
             exp_stor_data = data_help.modify_dict_key(exp_stor_data, storename, new_name)
             data_help.write_to_jsonFile(exp_stor_data_path, exp_stor_data)
 
+def change_storepair(exp_db_data_filepaths, df, exp_stor_data, stor_data, stor_pair_path, exp_stor_data_path, exp_data, budg_db):
+    """
+    Allows user to change the pairing setup within stor_data, opting for the creation of a new store, or the repairing to a different store name
+    """
+    bank_storename = util.select_dict_key_using_integer(stor_data, 'Please select your banks storename to change, (q) to quit: ', print_children=False, quit_str='q')
+    
+    if bank_storename != None:
+        print(f"\nYou currently have [{bank_storename}] paired with [{stor_data[bank_storename]}].")
+        user_in = util.get_user_input_for_chars(f"\nDo you want to:\n(a) - re-pair [{bank_storename}] to an existing store you setup\n(b) - re-pair [{bank_storename}] to a new store name?\n(q) quit\nType here: ",
+                                                ['a', 'b', 'q'])
+        if user_in == 'a':
+            new_pairing = util.select_from_list(list(exp_stor_data.keys()), f"\nPlease select a store to pair [{bank_storename}] to, or 'q' to quit: ", abortchar='q', ret_match=True)
+        
+        elif user_in == 'b':
+            new_pairing = util.process_input(f"\nPlease input your new storename to be used with [{bank_storename}]: ")
+            exp_stor_data[new_pairing] = [] # add new storename to exp_stor_data
+
+        elif user_in == 'q':
+            new_pairing = None
+        
+        if new_pairing is not None: # None type indicates user quit 
+            stor_data[bank_storename] = new_pairing # set the new pairing into the stor_db
+            print(f"Searching your transactions for any old references to [{bank_storename}]")
+            df_to_walk = df[df[env.BANK_STORENAME].str.contains(bank_storename, case=False, regex=False)] # ignore case
+            if df_to_walk.empty:
+                print("No data to change in your transactions.")
+            else:
+                print("\nFound the below data to change.\n")
+                util.print_fulldf(df_to_walk)
+                for idx, row in df_to_walk.iterrows():
+                    print("Curr Transaction:  %-10s | %-10s | %-10s | %-10s" % (row[env.DATE], row[env.AMOUNT], row[env.BANK_STORENAME], row[env.TYPE]))
+                    month_end_date = util.get_month_from_timestamp(row[env.DATE], start=False) # get relevant expenses for that month set by the user.
+                    selected_exp, exp_stor_data, stor_data, storename = expManager.search_store_relationships(new_pairing, exp_stor_data, budg_db[month_end_date], 
+                                                                        exp_stor_data_path, stor_data, stor_pair_path) # take the new pairing and pass into this func to get expense out the other end.
+                    df.at[idx, env.FILT_STORENAME] = storename
+                    df.at[idx, env.EXPENSE] = selected_exp  
+        
+                data_help.write_data(df, exp_db_data_filepaths[0])
+            
+            data_help.write_to_jsonFile(stor_pair_path, stor_data) 
+            util.print_fulldf(df)
+            
 def expenses_editor(exp_db_data_filepaths, stor_pair_path, exp_stor_data_path, budg_path, exp_path):
     """
     Edits an expense's name across all databases

@@ -15,7 +15,7 @@ def setup_expense_names(exp_path: str):
     exp_list = data_help.read_jsonFile(exp_path)
     if len(exp_list) == 0:
         exp_list[env.EXPENSE_DATA_KEY] = util.format_input_to_list("Please input your expense categories, separated by a space [exp1 exp2 ...] I will add a Misc category since it is reserved: ")
-        idxs_matched = util.check_lst_for_values(exp_list[env.EXPENSE_DATA_KEY], env.EXPENSE_MISC_POS_VALUES)
+        idxs_matched = util.check_lst_for_values(exp_list[env.EXPENSE_DATA_KEY], env.MISC_POS_VALUES)
         for idx in sorted(idxs_matched, reverse=True):
             print(f"Found {exp_list[env.EXPENSE_DATA_KEY][idx]} in your expenses. Removing since '{env.EXPENSE_MISC_STR}' is reserved as miscellaneous category.")
             del exp_list[env.EXPENSE_DATA_KEY][idx]
@@ -119,37 +119,40 @@ def get_expenses_for_rows(df, stor_exp_data_path, stor_data_path, budg_path):
         df - pandas dataframe
         stor_exp_data_path - filepath to expensesDB
     """
-    print("\nIterating your transactions.\n")
+    print("\nIterating your transactions. If you want to quit halfway, type ctrl c to save!\n")
 
     exp_stor_db = data_help.read_jsonFile(stor_exp_data_path) # initialize the objects for tracking changes
     stor_db = data_help.read_jsonFile(stor_data_path)
     budg_db = data_help.read_jsonFile(budg_path)
+    try:
+        for idx, row in df.iterrows():
+            if pd.isnull(row[env.EXPENSE]): # iterate through only the data which has no expenses declared.
+                month_end_date = util.get_month_from_timestamp(row[env.DATE], start=False) # get relevant expenses for that month set by the user.
+                if type(row[env.BANK_STORENAME]) is str:
+                    match = env.RE_EXPR.search(row[env.BANK_STORENAME])
+                    if match:
 
-    for idx, row in df.iterrows():
-        if pd.isnull(row[env.EXPENSE]): # iterate through only the data which has no expenses declared.
-            month_end_date = util.get_month_from_timestamp(row[env.DATE], start=False) # get relevant expenses for that month set by the user.
-            if type(row[env.BANK_STORENAME]) is str:
-                match = env.RE_EXPR.search(row[env.BANK_STORENAME])
-                if match:
-
-                    processed_text = util.process_text(match.group(0))
-                    # print(f"Was able to filter - {row[env.BANK_STORENAME]} -> {processed_text}")
-                    storename = processed_text
-                        
-                else:
-                    print(f"Unable to filter - {row[env.BANK_STORENAME]}")
-                    storename = row[env.BANK_STORENAME]
+                        processed_text = util.process_text(match.group(0))
+                        # print(f"Was able to filter - {row[env.BANK_STORENAME]} -> {processed_text}")
+                        storename = processed_text
+                            
+                    else:
+                        print(f"Unable to filter - {row[env.BANK_STORENAME]}")
+                        storename = row[env.BANK_STORENAME]
+                    
+                else: # cqtch the NaN case
+                    query = row[env.TYPE].lower()
+                    print(query)
+                    storename = query
                 
-            else: # cqtch the NaN case
-                query = row[env.TYPE].lower()
-                print(query)
-                storename = query
-            
-            print("Curr Transaction:  %-10s | %-10s | %-10s | %-10s" % (row[env.DATE], row[env.AMOUNT], storename, row[env.TYPE]))
-            selected_exp, exp_stor_db, stor_db, storename = search_store_relationships(storename, exp_stor_db, budg_db[month_end_date], 
-                                                                    stor_exp_data_path, stor_db, stor_data_path)
-            df.at[idx, env.FILT_STORENAME] = storename
-            df.at[idx, env.EXPENSE] = selected_exp  
+                print("Curr Transaction:  %-10s | %-10s | %-10s | %-10s" % (row[env.DATE], row[env.AMOUNT], storename, row[env.TYPE]))
+                selected_exp, exp_stor_db, stor_db, storename = search_store_relationships(storename, exp_stor_db, budg_db[month_end_date], 
+                                                                        stor_exp_data_path, stor_db, stor_data_path)
+                df.at[idx, env.FILT_STORENAME] = storename
+                df.at[idx, env.EXPENSE] = selected_exp  
+    
+    except KeyboardInterrupt:
+        print("\n\nQuitting to main menu. Your data inputs will be saved, and you can resume where you left off by restarting and selecting 'v' for view data!\n")
     
     print("\nFinished gathering your expense data: \n")
     util.print_fulldf(df)
@@ -183,14 +186,14 @@ def search_store_relationships(storename, exp_stor_db, budg_db, stor_exp_data_pa
         if len(selected_exps) == 1:
             selected_exp = selected_exps[0]
         else:
-            selected_exp = util.select_from_list(selected_exps, f"Please select which expense you want for this transaction at {storename}: ", ret_match=True)
+            selected_exp = util.select_from_list(selected_exps, f"Please select which expense you want for this transaction at '{storename}': ", ret_match=True)
         exp_stor_db[storename] = selected_exps
         data_help.write_to_jsonFile(stor_exp_data_path, exp_stor_db)
 
     elif len(exps_fr_store) == 1:
         selected_exp = exps_fr_store[0]
     else:
-        selected_exp = exps_fr_store[util.select_from_list(exps_fr_store, f"Please select an expense for this transaction at {storename}: ")]
+        selected_exp = exps_fr_store[util.select_from_list(exps_fr_store, f"Please select an expense for this transaction at '{storename}': ")]
 
     return selected_exp, dict(exp_stor_db), stor_db, storename
     
