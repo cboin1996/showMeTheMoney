@@ -326,29 +326,29 @@ if __name__=="__main__":
         if user_in != 'q':
             ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths = find_data_paths(ndata_path, adata_path, db_exp_data_path, db_inc_data_path, output_str="LOCATING FILES")
 
-        if user_in == 'i': 
-            backup_data([db_data_path, lib_data_path], backup_folderpath)
-            if check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adata_path, db_exp_data_path, db_inc_data_path):
-                ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths = find_data_paths(ndata_path, adata_path, db_exp_data_path, db_inc_data_path, output_str="RECHECKING FILES")
-                get_income(db_inc_data_fpaths)
-                get_expenses(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path)
+            if user_in == 'i': 
+                backup_data([db_data_path, lib_data_path], backup_folderpath)
+                if check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adata_path, db_exp_data_path, db_inc_data_path):
+                    ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths = find_data_paths(ndata_path, adata_path, db_exp_data_path, db_inc_data_path, output_str="RECHECKING FILES")
+                    get_income(db_inc_data_fpaths)
+                    get_expenses(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path)
+                    
+                else:
+                    print(f"No data found. Please place files in {ndata_path} so I can eat.")
+
+            elif len(db_exp_data_fpaths) != 0: # if import wasnt selected and there is no data csv's to load... skip running the program functions and warn user
+                if user_in == 'b':
+                    backup_data([db_data_path, lib_data_path], backup_folderpath)
                 
+                elif user_in == 'e':
+                    backup_data([db_data_path, lib_data_path], backup_folderpath)
+                    edit_money_data(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path, db_inc_data_fpaths)
+                elif user_in == 'v':
+                    get_income(db_inc_data_fpaths)
+                    get_expenses(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path)
+                    view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path)
             else:
                 print(f"No data found. Please place files in {ndata_path} so I can eat.")
-
-        elif len(db_exp_data_fpaths) != 0: # if import wasnt selected and there is no data... skip running the program functions and warn user
-            if user_in == 'b':
-                backup_data([db_data_path, lib_data_path], backup_folderpath)
-            
-            elif user_in == 'e':
-                backup_data([db_data_path, lib_data_path], backup_folderpath)
-                edit_money_data(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path, db_inc_data_fpaths)
-            elif user_in == 'v':
-                get_income(db_inc_data_fpaths)
-                get_expenses(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path)
-                view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path)
-        else:
-            print(f"No data found. Please place files in {ndata_path} so I can eat.")
 
         if user_in == 'q':
             print("Gone so soon? Ill be here if you need me. Goodby-")
