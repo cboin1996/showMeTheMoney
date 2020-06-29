@@ -1,6 +1,9 @@
 import os 
 import re
 import pandas as pd
+
+
+VERSION = "1.10"
 """
 Dataframe Headers
 """
