@@ -315,7 +315,7 @@ if __name__=="__main__":
     expManager.setup_expense_names(exp_path) # check for expense list and setup if none are there.
     print("--- --- --- --- --- --- --- --- --- --- --- --- ---")
     print("--- --- --- -- SHOW ME YOUR MONEY -- --- --- --- --")
-    print("--- --- --- --- --- V. 1.00 --- --- --- --- --- ---")
+    print(f"--- --- --- --- --- V. {env.VERSION} --- --- --- --- --- ---")
     print("WELCOME TO SHOW ME YOUR MONEYYYYY COME ON DOWN!")
     quit = False
     while not quit:
@@ -339,7 +339,7 @@ if __name__=="__main__":
 
             elif len(db_exp_data_fpaths) != 0: # if import wasnt selected and there is no data csv's to load... skip running the program functions and warn user
                 if user_in == 'b':
-                    backup_data([db_data_path, lib_data_path], backup_folderpath)
+                    backup_data([data_path, lib_data_path], backup_folderpath)
                 
                 elif user_in == 'e':
                     backup_data([db_data_path, lib_data_path], backup_folderpath)
