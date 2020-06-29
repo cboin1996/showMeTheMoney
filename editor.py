@@ -124,8 +124,9 @@ def expenses_editor(exp_db_data_filepaths, stor_pair_path, exp_stor_data_path, b
         exp_stor_data = data_help.read_jsonFile(exp_stor_data_path)
         budg_data = data_help.read_jsonFile(budg_path)
 
-        prompt = "Would you like to:\n(a) - add an expense\n(b) - edit an expenses name\n(c) - pair expenses to stores\n(d) - delete an expense **CAUTION**\n(e) - edit an expense within your database\n(q) - quit editor\ntype here: "
-        user_in = util.get_user_input_for_chars(prompt, ['a', 'b', 'c', 'd', 'e', 'q', 's'])
+        prompt_pt1 = "Would you like to:\n(a) - add an expense\n(b) - edit an expenses name\n(c) - pair expenses to stores\n"
+        prompt_pt2 = "(d) - delete an expense **CAUTION**\n(e) - edit an expense within your database\n(f) - unpair an expense from stores\n(q) - quit editor\ntype here: "
+        user_in = util.get_user_input_for_chars(prompt_pt1+prompt_pt2, ['a', 'b', 'c', 'd', 'e', 'f', 'q', 's'])
 
         if user_in == 'a':
             add_expense(exp_data, exp_stor_data, exp_path, exp_stor_data_path)
@@ -135,12 +136,13 @@ def expenses_editor(exp_db_data_filepaths, stor_pair_path, exp_stor_data_path, b
             pair_prompt = "Enter the expenses you want to add to store, separated by a space.. (q) to abort: "
             expenses = util.select_indices_of_list(pair_prompt, exp_data[env.EXPENSE_DATA_KEY], return_matches=True, abortable=True, abortchar='q')
             if expenses != None:
-                for expense in expenses:
-                    add_expense_to_store(exp_stor_data, exp_stor_data_path, expense)
+                add_expenses_to_store(exp_stor_data, exp_stor_data_path, expenses)
         elif user_in == 'd':
             remove_expense_from_dbs(exp_db_data_filepaths[0], exp_stor_data, exp_data, budg_data, df, exp_stor_data_path, budg_path, exp_path)
         elif user_in == 'e':
             edit_cell_in_dfcol(exp_db_data_filepaths[0], df, col_name=env.EXPENSE, opt_col=env.FILT_STORENAME, opt_dict=exp_stor_data)
+        elif user_in == 'f':
+            remove_exp_from_store(exp_db_data_filepaths[0], df, exp_stor_data, exp_stor_data_path)
         elif user_in == 'q':
             done = True
         elif user_in == 's':
@@ -262,14 +264,14 @@ def add_expense(exp_data, exp_stor_data, exp_path, exp_stor_data_path):
 
             user_in = util.get_user_input_for_chars("Do you want to add this expense to some stores [y/n]? ", ['y', 'n'])
             if user_in == 'y':
-                add_expense_to_store(exp_stor_data, exp_stor_data_path, exp_input)
+                add_expenses_to_store(exp_stor_data, exp_stor_data_path, list(exp_input))
 
             else:
                 flag = True
         else:
             print(f"That expense already exists! Try another one. Heres the list of existing expenses: {exp_data[env.EXPENSE_DATA_KEY]}")
 
-def add_expense_to_store(exp_stor_data, exp_stor_data_path, expense):
+def add_expenses_to_store(exp_stor_data, exp_stor_data_path, expenses):
     """
     Adds an expense to a store within storesWithExpenses.json
     params:
@@ -282,9 +284,51 @@ def add_expense_to_store(exp_stor_data, exp_stor_data_path, expense):
     store_idxs = util.select_indices_of_list(prompt="Select a store to add this expense to. (q) to abort.", list_to_compare_to=exp_stor_data_keylist, abortable=True, abortchar='q') # TODO: Add the storename
     if store_idxs != None:
         for idx in store_idxs:
-            exp_stor_data[exp_stor_data_keylist[idx]].append(expense)
-            print(f"Added {expense} to {exp_stor_data_keylist[idx]}")
+            for expense in expenses:
+                if expense not in exp_stor_data[exp_stor_data_keylist[idx]]:
+                    exp_stor_data[exp_stor_data_keylist[idx]].append(expense)
+                    print(f"Added '{expense}' to '{exp_stor_data_keylist[idx]}'")
+                else:
+                    print(f"Ignoring addition! '{expense}' already is in '{exp_stor_data_keylist[idx]}'")
         data_help.write_to_jsonFile(exp_stor_data_path, exp_stor_data)
+
+def remove_exp_from_store(df_path, df, exp_stor_data, exp_stor_data_path):
+    """
+    Removes an expense from exp_stor_data dict, replacing the reference with user selection or misc in the dataframe
+    """
+    exp_stor_keyslist = list(exp_stor_data.keys())
+    exp_stor_keyslist.sort()
+    prompt = "Select which store(s) you wish to remove expense(s) from. (q) to abort."
+    storenames = util.select_indices_of_list(prompt, exp_stor_keyslist, return_matches=True, abortable=True, abortchar='q')
+    if storenames is not None:
+        for storename in storenames:
+            removed_expenses = util.select_indices_of_list("Select which expense(s) to remove. (q) to abort.", exp_stor_data[storename], return_matches=True, abortable=True, abortchar='q')
+            if removed_expenses is not None:
+                print(f"--- Editing {env.EXP_STOR_DB_FNAME} --- ")
+                for expense in removed_expenses:
+                    exp_stor_data[storename].remove(expense)
+                    print(f"Removed {expense} from {storename}.")
+                
+                if len(exp_stor_data[storename]) == 0: # if all was deleted, append misc into this store.
+                    print(f"You deleted all expenses from {storename}, I am adding {env.EXPENSE_MISC_STR} to preserve your data.")
+                    exp_stor_data[storename].append(env.EXPENSE_MISC_STR)
+                    new_exp = env.EXPENSE_MISC_STR
+
+                print(f"--- Editing {env.OUT_EXP_DATA_TEMPL} --- ")
+                for rem_exp in removed_expenses:
+                    if len(exp_stor_data[storename]) == 1:
+                        print(f"Only expense left for '{storename}' is '{exp_stor_data[storename][0]}'. Replacing '{rem_exp}' with '{exp_stor_data[storename][0]}'.")
+                        new_exp = exp_stor_data[storename][0]
+                    else:
+
+                        new_exp = util.select_from_list(exp_stor_data[storename], f"Which expense do you want to use to replace '{rem_exp}' in '{storename}'? (q) to quit. ", abortchar='q',
+                                                        ret_match=True)
+                        if new_exp is None: # user quits
+                            return None 
+                        
+                    edit_df_entries_given_columns(df, df_path, env.EXPENSE, env.FILT_STORENAME, storename, rem_exp, new_exp)
+                data_help.write_to_jsonFile(exp_stor_data_path, exp_stor_data)
+
 
 def edit_df_entries(df, df_path, column_name, old_entry, new_entry):
     """
@@ -295,6 +339,16 @@ def edit_df_entries(df, df_path, column_name, old_entry, new_entry):
         data_help.write_data(df, df_path)
     else:
         print("No records matched in dataframe. Left it alone.")
+
+def edit_df_entries_given_columns(df, df_path, col_to_change, col_to_match, match_key, old_entry, new_entry):
+    """
+    Find entries in col_to_match and replaces the values in col_to_change from old_entry to new_entry
+    """
+    if not df.loc[(df[col_to_match] == match_key) & (df[col_to_change] == old_entry)].empty:
+        df.loc[(df[col_to_match] == match_key) & (df[col_to_change] == old_entry), col_to_change] = new_entry
+        data_help.write_data(df, df_path)
+    else:
+        print("No records matched in dataframe, left it alone.")
 
 def sync_expenses(exp_data, exp_stor_data, exp_path, exp_stor_data_path):
     """
