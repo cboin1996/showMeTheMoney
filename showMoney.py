@@ -96,7 +96,8 @@ def check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adat
 
     data_help.write_data(df_exp, os.path.join(db_exp_data_path, env.OUT_EXP_DATA_TEMPL))
     data_help.write_data(df_inc, os.path.join(db_inc_data_path, env.OUT_INC_DATA_TEMPL))
-    data_help.move_files(files=ndata_filepaths, dest=adata_path)
+    timestamp = datetime.datetime.now().strftime("%m_%d_%Y__%H_%M_%S") + ".csv"
+    data_help.move_files(files=ndata_filepaths, dest=os.path.join(adata_path, timestamp))
     print(f"Data imported to {db_inc_data_path} and {db_exp_data_path}. Old files moved to {adata_path}")
     return True
 
@@ -104,7 +105,7 @@ def edit_money_data(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg
     """
     Top level interface for editing databases
     """   
-    prompt = "Would you like to edit:\n(a) - storenames\n(b) - budget amounts\n(c) - expense names\n(d) - imported data\n(q) to quit?\nType Here: "
+    prompt = "Would you like to edit:\n(a) - storenames\n(b) - budget amounts\n(c) - expenses\n(d) - imported data\n(q) to quit?\nType Here: "
     prompt_chars = ['a', 'b', 'c', 'd', 'q']
     done = False
     while not done:
@@ -314,7 +315,7 @@ if __name__=="__main__":
     expManager.setup_expense_names(exp_path) # check for expense list and setup if none are there.
     print("--- --- --- --- --- --- --- --- --- --- --- --- ---")
     print("--- --- --- -- SHOW ME YOUR MONEY -- --- --- --- --")
-    print("--- --- --- --- --- V. 0.00 --- --- --- --- --- ---")
+    print("--- --- --- --- --- V. 1.00 --- --- --- --- --- ---")
     print("WELCOME TO SHOW ME YOUR MONEYYYYY COME ON DOWN!")
     quit = False
     while not quit:

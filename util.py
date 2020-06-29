@@ -167,7 +167,7 @@ def print_simple_dict(dct):
 
 def print_nested_dict(dct):
     """
-    Neatly prints out a budget tree for the user
+    Neatly prints out a nested tree for the user
     """
     for k, v in dct.items():
         print(f" - {k}")
