@@ -251,6 +251,8 @@ def budg_plotter(df_to_plot, budget_df, df_inc, figsize=None, nrows=None, ncols=
         for p in sub_ax.patches:
             ax.annotate(str(round(p.get_height(), 2)), (p.get_x()+p.get_width()/2., p.get_height()), 
                         ha='center', va='center', fontsize=7, fontweight='bold')
+            if p.get_height() < 0: # sets the color of the bar to red if below zero
+                p.set_color('#ff2b2b')
 
         plot_idx += 1
     plt.tight_layout()
