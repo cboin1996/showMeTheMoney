@@ -7,7 +7,7 @@ import data_help
 import env
 import expManager
 
-def df_editor(df_filepaths):
+def df_editor(df_filepaths, recbin_path = None):
     """
     Allows the editing of a dataframe
     """
@@ -22,11 +22,18 @@ def df_editor(df_filepaths):
             edit_prompt = "Which row or rows would you like to delete (q) to abort? "
             rows = util.select_indices_of_list(edit_prompt, list(df.index), abortable=True, abortchar='q', print_lst=False)
             if rows is not None: # above returns none if user aborts
+                if recbin_path != None:
+                    rec_bin_df = data_help.load_csv(recbin_path, dtype=env.SB_dtypes, parse_dates=env.SB_parse_dates)
+                    rec_df_to_add = df.loc[rows]
+                    print(f"Moving below df to recycle bin.\n{rec_df_to_add}\n")
+                    rec_bin_df = pd.concat([rec_bin_df, rec_df_to_add])
+                    data_help.write_data(rec_bin_df, recbin_path)
                 df.drop(index=rows, inplace=True)
                 data_help.write_data(df, df_filepaths[0])
 
         elif user_in == 'q':
             done = True
+
 def store_editor(exp_db_data_filepaths, stor_pair_path, exp_stor_data_path, budg_path, exp_path):
     """
     Edits a store's name across all databases.
