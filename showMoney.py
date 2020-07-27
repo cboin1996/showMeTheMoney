@@ -32,6 +32,16 @@ def initialize_dbs(json_paths):
             with open(path, 'w') as f:
                 json.dump({}, f)
 
+def initialize_csvs(list_of_csvs, list_of_cols):
+    """
+    Initializes empty csv files given by paths list_of_csvs
+    """
+    
+    for item in zip(list_of_csvs, list_of_cols):
+        if not os.path.exists(item[0]):
+            df = pd.DataFrame(columns=item[1])
+            data_help.write_data(df, item[0])
+
 def find_data_paths(ndata_path, adata_path, db_exp_data_path, db_inc_data_path, output_str=""):
     """
     Searches the given paths ndata_path, adata_path, db_exp_data_path, for csv files
@@ -54,7 +64,7 @@ def find_data_paths(ndata_path, adata_path, db_exp_data_path, db_inc_data_path, 
     print(env.OUTPUT_SEP_STR)
     return ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths
 
-def check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adata_path, db_exp_data_path, db_inc_data_path):
+def check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adata_path, db_exp_data_path, db_inc_data_path, exp_recbin_path, inc_recbin_path):
     """
     Checks db and new folder for any data. 
     Imports the data into expense and income dataframes
@@ -84,11 +94,16 @@ def check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adat
 
     else:
         return False
-        
+
+    df_exp_recbin = data_help.load_csv(exp_recbin_path, dtype=env.SB_dtypes, parse_dates=env.SB_parse_dates)
+    df_inc_recbin = data_help.load_csv(inc_recbin_path, dtype=env.INC_dtypes, parse_dates=env.SB_parse_dates)   
     print("New data loaded locally.")
-    print(f"INCOME\n\n{df_inc}\n\nEXPENSES\n\n{df_exp}\n")
+    print(f"INCOME\n\n{df_inc}\n\nYOUR IGNORED INCOME\n\n{df_inc_recbin}\n\nEXPENSES\n\n{df_exp}\n\nYOUR IGNORED EXPENSES\n\n{df_exp_recbin}\n")
     df_exp = data_help.drop_dups(df=df_exp, col_names=env.CHECK_FOR_DUPLICATES_COL_NAMES, ignore_index=True, strip_col=env.TYPE)
     df_inc = data_help.drop_dups(df=df_inc, col_names=env.SB_INC_COLNAMES, ignore_index=True, strip_col=env.TYPE)
+
+    df_exp = data_help.remove_subframe(df_to_remove_from=df_exp, df_to_remove=df_exp_recbin, col_names=env.CHECK_FOR_DUPLICATES_COL_NAMES)
+    df_inc = data_help.remove_subframe(df_to_remove_from=df_inc, df_to_remove=df_inc_recbin, col_names=env.SB_INC_COLNAMES)
 
     print(f"INCOME\n\n{df_inc}\n\nEXPENSES\n\n{df_exp}\n")
     df_exp.sort_values(by=[env.DATE], inplace=True) # sort data by date.
@@ -101,9 +116,18 @@ def check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adat
     print(f"Data imported to {db_inc_data_path} and {db_exp_data_path}. Old files moved to {adata_path}")
     return True
 
-def edit_money_data(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path, db_inc_data_fpaths):
+def edit_money_data(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path, db_inc_data_fpaths, exp_recbin_path, inc_recbin_path):
     """
     Top level interface for editing databases
+    params:
+        db_exp_data_fpaths - the paths to any csv files under db folder
+        stor_pair_path - the path to the store pairs json database under lib
+        stor_exp_data_path - the path to the store expense json database under lib
+        budg_path - the path to the budget database under lib
+        exp_path - the path to the expense json database under lib
+        db_inc_data_fpaths - the path to the income csv's found under db folder
+        exp_recbin_path - the path to the expense recycle bin csv
+        inc_recbin_path - the path to the income recycle bin csv
     """   
     prompt = "Would you like to edit:\n(a) - storenames\n(b) - budget amounts\n(c) - expenses\n(d) - imported data\n(q) to quit?\nType Here: "
     prompt_chars = ['a', 'b', 'c', 'd', 'q']
@@ -118,11 +142,15 @@ def edit_money_data(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg
         elif user_in == 'c':
             editor.expenses_editor(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path)
         elif user_in == 'd':
-            df_user_in = util.get_user_input_for_chars("Which dataset:\n(a) - income\n(b) - expenses\n(q) - quit\nType here: ", ['a', 'b', 'q'])
+            df_user_in = util.get_user_input_for_chars("Which dataset:\n(a) - income\n(b) - expenses\n(c) - income recycle bin\n(d) - expenses recycle bin\n(q) - quit\nType here: ", ['a', 'b', 'c', 'd', 'q'])
             if df_user_in == 'a':
-                editor.df_editor(db_inc_data_fpaths)
+                editor.df_editor(db_inc_data_fpaths, inc_recbin_path)
             elif df_user_in == 'b':
-                editor.df_editor(db_exp_data_fpaths)
+                editor.df_editor(db_exp_data_fpaths, exp_recbin_path)
+            elif df_user_in == 'c':
+                editor.df_editor([inc_recbin_path]) # function takes list of csvs as input
+            elif df_user_in == 'd':
+                editor.df_editor([exp_recbin_path])
         elif user_in == 'q':
             print("Exited editor.")
             done = True
@@ -292,6 +320,11 @@ if __name__=="__main__":
     db_inc_data_path = os.path.join(db_data_path, 'income')
     lib_data_path = os.path.join(root, 'lib')
     help_doc_path = os.path.join(root, 'README.md')
+    recbin_path = os.path.join(data_path, 'recyclebin')
+    exp_recbin_data_path = os.path.join(recbin_path, 'expenses')
+    inc_recbin_data_path = os.path.join(recbin_path, 'income')
+    exp_recbin_path = os.path.join(exp_recbin_data_path, 'exp_recbin.csv')
+    inc_recbin_path = os.path.join(inc_recbin_data_path, 'inc_recbin.csv')
 
     list_of_dirs = [data_path,
                     ndata_path,
@@ -300,7 +333,10 @@ if __name__=="__main__":
                     db_exp_data_path,
                     db_inc_data_path,
                     lib_data_path,
-                    backup_folderpath]
+                    backup_folderpath,
+                    recbin_path,
+                    exp_recbin_data_path,
+                    inc_recbin_data_path]
 
     budg_path = os.path.join(root, env.BUDGET_FNAME)
     stor_exp_data_path = os.path.join(root, env.EXP_STOR_DB_FNAME)
@@ -314,6 +350,7 @@ if __name__=="__main__":
 
     initialize_dirs(list_of_dirs)
     initialize_dbs(json_paths)
+    initialize_csvs([exp_recbin_path, inc_recbin_path], [env.COLUMN_NAMES, env.SB_INC_COLNAMES])
     expManager.setup_expense_names(exp_path) # check for expense list and setup if none are there.
     print("--- --- --- --- --- --- --- --- --- --- --- --- ---")
     print("--- --- --- -- SHOW ME YOUR MONEY -- --- --- --- --")
@@ -331,7 +368,7 @@ if __name__=="__main__":
 
             if user_in == 'i': 
                 backup_data([db_data_path, lib_data_path], backup_folderpath)
-                if check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adata_path, db_exp_data_path, db_inc_data_path):
+                if check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adata_path, db_exp_data_path, db_inc_data_path, exp_recbin_path, inc_recbin_path):
                     ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths = find_data_paths(ndata_path, adata_path, db_exp_data_path, db_inc_data_path, output_str="RECHECKING FILES")
                     get_income(db_inc_data_fpaths)
                     get_expenses(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path)
@@ -345,7 +382,7 @@ if __name__=="__main__":
                 
                 elif user_in == 'e':
                     backup_data([db_data_path, lib_data_path], backup_folderpath)
-                    edit_money_data(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path, db_inc_data_fpaths)
+                    edit_money_data(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path, db_inc_data_fpaths, exp_recbin_path, inc_recbin_path)
                 elif user_in == 'v':
                     get_income(db_inc_data_fpaths)
                     get_expenses(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path)

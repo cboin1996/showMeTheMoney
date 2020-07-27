@@ -60,6 +60,7 @@ def load_and_process_csvs(file_paths, strip_cols=None):
     df_out = pd.concat(dfs_in)
     if strip_cols != None:
         df_out = strip_cols_in_df(df_out, strip_cols)
+
     return df_out
         
 def strip_cols_in_df(df, cols):
@@ -93,6 +94,15 @@ def drop_dups(df, col_names, ignore_index=False, strip_col=None):
 
     return df
 
+def remove_subframe(df_to_remove_from, df_to_remove, col_names):
+    """
+    Used to drop the a dataframe from within another
+    """
+    df = pd.concat([df_to_remove_from, df_to_remove])
+    df[env.DATE] = pd.to_datetime(df[env.DATE])
+    df.drop_duplicates(keep=False, inplace=True, subset=col_names)
+
+    return df
 def write_data(df, out_filepath):
     """
     Writes filtered data to csv db
