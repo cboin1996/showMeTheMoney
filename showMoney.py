@@ -106,11 +106,9 @@ def check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adat
     df_inc = data_help.remove_subframe(df_to_remove_from=df_inc, df_to_remove=df_inc_recbin, col_names=env.SB_INC_COLNAMES)
 
     print(f"INCOME\n\n{df_inc}\n\nEXPENSES\n\n{df_exp}\n")
-    df_exp.sort_values(by=[env.DATE], inplace=True) # sort data by date.
-    df_inc.sort_values(by=[env.DATE], inplace=True) # sort data by date.
 
-    data_help.write_data(df_exp, os.path.join(db_exp_data_path, env.OUT_EXP_DATA_TEMPL))
-    data_help.write_data(df_inc, os.path.join(db_inc_data_path, env.OUT_INC_DATA_TEMPL))
+    data_help.write_data(df_exp, os.path.join(db_exp_data_path, env.OUT_EXP_DATA_TEMPL), sortby=env.DATE)
+    data_help.write_data(df_inc, os.path.join(db_inc_data_path, env.OUT_INC_DATA_TEMPL), sortby=env.DATE)
     timestamp = datetime.datetime.now().strftime("%m_%d_%Y__%H_%M_%S") + ".csv"
     data_help.move_files(files=ndata_filepaths, dest=os.path.join(adata_path, timestamp))
     print(f"Data imported to {db_inc_data_path} and {db_exp_data_path}. Old files moved to {adata_path}")
@@ -143,7 +141,7 @@ def edit_money_data(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg
             editor.expenses_editor(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path)
         elif user_in == 'd':
             editor.df_editor_menu(db_inc_data_fpaths, inc_recbin_path, db_exp_data_fpaths, exp_recbin_path)
-            
+
         elif user_in == 'q':
             print("Exited editor.")
             done = True

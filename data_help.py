@@ -75,7 +75,7 @@ def drop_for_substring(df, col_name, lst_of_substrs, str_out=''):
     """
     Drops any matched for a list of substrings within the dataframe, returns the df
     """
-    
+    df[col_name] = df[col_name].fillna('') # avoids error when parsing NaN types in the col
     df_to_drop = df[df[col_name].str.contains("|".join(lst_of_substrs))]
     if df_to_drop.empty:
         print("No Transactions to remove.")

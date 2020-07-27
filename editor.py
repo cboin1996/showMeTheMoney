@@ -38,17 +38,17 @@ def df_editor(df_to_move_from_path, df_to_move_to_path = None, restorable=False,
             df_to_move_to = data_help.load_csv(df_to_move_to_path, dtype=env.SB_dtypes, parse_dates=env.SB_parse_dates)
 
         if restorable == False:
-            prompt = "Whould you like to: \n(a) - delete a row\n(q) - quit\nType here: "
+            prompt = "Whould you like to: \n(a) - move transactions to the recycle bin\n(q) - quit\nType here: "
             input_chars = ['a', 'q']
         else:
-            prompt = "Whould you like to: \n(a) - delete a row\n(b) - restore from recycling\n(q) - quit\nType here: "
+            prompt = "Whould you like to: \n(a) - delete a row from the recycle bin\n(b) - restore from recycling\n(q) - quit\nType here: "
             recycle = False # if user is in recycle bin, deleting removes permanently
             input_chars = ['a', 'b', 'q']
 
         user_in = util.get_user_input_for_chars(prompt, input_chars)
 
         if user_in ==  'a':
-            df_swap("Which row or rows would you like to delete (q) to abort? ", df_to_move_from, df_to_move_to, df_to_move_from_path, df_to_move_to_path, recycle=recycle)
+            df_swap("Which rows? (q) to abort? ", df_to_move_from, df_to_move_to, df_to_move_from_path, df_to_move_to_path, recycle=recycle)
                     
         elif user_in == 'b':
             df_swap("Which row or rows would you like to restore (q) to abort? ", df_to_move_from, df_to_move_to, df_to_move_from_path, df_to_move_to_path, recycle=True)
