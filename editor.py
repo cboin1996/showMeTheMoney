@@ -7,32 +7,67 @@ import data_help
 import env
 import expManager
 
-def df_editor(df_filepaths, recbin_path = None):
+def df_editor_menu(db_inc_data_fpaths, inc_recbin_path, db_exp_data_fpaths, exp_recbin_path):
+    done = False
+    while not done:
+        df_user_in = util.get_user_input_for_chars("Which dataset:\n(a) - income\n(b) - expenses\n(c) - income recycle bin\n(d) - expenses recycle bin\n(q) - quit\nType here: ", ['a', 'b', 'c', 'd', 'q'])
+        if df_user_in == 'a':
+            df_editor(db_inc_data_fpaths[0], df_to_move_to_path=inc_recbin_path)
+        elif df_user_in == 'b':
+            df_editor(db_exp_data_fpaths[0], df_to_move_to_path=exp_recbin_path)
+        elif df_user_in == 'c':
+            df_editor(inc_recbin_path, df_to_move_to_path=db_inc_data_fpaths[0], restorable=True) # function takes list of csvs as input
+        elif df_user_in == 'd':
+            df_editor(exp_recbin_path, df_to_move_to_path=db_exp_data_fpaths[0], restorable=True) 
+        elif df_user_in == 'q':
+            done = True
+
+def df_editor(df_to_move_from_path, df_to_move_to_path = None, restorable=False, recycle=True):
     """
     Allows the editing of a dataframe
+    params:
+        df_filepaths - the dataframe file paths to edit
+        recbin_path - the recyclebin path (default None) if None, do not recycle
+        restorable - whether or not the df is restorable
+        recycle - whether or not data deleted from a frame will be moved to anotehr or lost
     """
     done = False
     while not done:
-        df = data_help.load_csvs(df_filepaths, dtype=env.SB_dtypes, parse_dates=env.SB_parse_dates)
-        prompt = "Whould you like to: \n(a) - delete a row\n(q) - quit\nType here: "
-        user_in = util.get_user_input_for_chars(prompt, ['a', 'q'])
+        df_to_move_from = data_help.load_csv(df_to_move_from_path, dtype=env.SB_dtypes, parse_dates=env.SB_parse_dates)
+        if df_to_move_to_path is not None:
+            df_to_move_to = data_help.load_csv(df_to_move_to_path, dtype=env.SB_dtypes, parse_dates=env.SB_parse_dates)
+
+        if restorable == False:
+            prompt = "Whould you like to: \n(a) - delete a row\n(q) - quit\nType here: "
+            input_chars = ['a', 'q']
+        else:
+            prompt = "Whould you like to: \n(a) - delete a row\n(b) - restore from recycling\n(q) - quit\nType here: "
+            recycle = False # if user is in recycle bin, deleting removes permanently
+            input_chars = ['a', 'b', 'q']
+
+        user_in = util.get_user_input_for_chars(prompt, input_chars)
 
         if user_in ==  'a':
-            util.print_fulldf(df)
-            edit_prompt = "Which row or rows would you like to delete (q) to abort? "
-            rows = util.select_indices_of_list(edit_prompt, list(df.index), abortable=True, abortchar='q', print_lst=False)
-            if rows is not None: # above returns none if user aborts
-                if recbin_path != None:
-                    rec_bin_df = data_help.load_csv(recbin_path, dtype=env.SB_dtypes, parse_dates=env.SB_parse_dates)
-                    rec_df_to_add = df.loc[rows]
-                    print(f"Moving below df to recycle bin.\n{rec_df_to_add}\n")
-                    rec_bin_df = pd.concat([rec_bin_df, rec_df_to_add])
-                    data_help.write_data(rec_bin_df, recbin_path)
-                df.drop(index=rows, inplace=True)
-                data_help.write_data(df, df_filepaths[0])
+            df_swap("Which row or rows would you like to delete (q) to abort? ", df_to_move_from, df_to_move_to, df_to_move_from_path, df_to_move_to_path, recycle=recycle)
+                    
+        elif user_in == 'b':
+            df_swap("Which row or rows would you like to restore (q) to abort? ", df_to_move_from, df_to_move_to, df_to_move_from_path, df_to_move_to_path, recycle=True)
 
         elif user_in == 'q':
             done = True
+
+def df_swap(prompt, df_to_move_from, df_to_move_to, df_to_move_from_path, df_to_move_to_path, recycle=True):
+    util.print_fulldf(df_to_move_from)
+    rows = util.select_indices_of_list(prompt, list(df_to_move_from.index), abortable=True, abortchar='q', print_lst=False)
+    if rows is not None: # above returns none if user aborts
+        if recycle == True: # if recycle bin is wanted, perform the move between dataframes
+            df_to_move_from, df_to_move_to = data_help.locate_and_move_data_between_dfs(df_to_move_from, rows, df_to_move_to)
+            data_help.write_data(df_to_move_to, df_to_move_to_path, sortby=env.DATE)
+            
+        else: # drop and dont recycle
+            df_to_move_from.drop(index=rows, inplace=True)
+
+        data_help.write_data(df_to_move_from, df_to_move_from_path, sortby=env.DATE)
 
 def store_editor(exp_db_data_filepaths, stor_pair_path, exp_stor_data_path, budg_path, exp_path):
     """

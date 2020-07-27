@@ -142,15 +142,8 @@ def edit_money_data(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg
         elif user_in == 'c':
             editor.expenses_editor(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path)
         elif user_in == 'd':
-            df_user_in = util.get_user_input_for_chars("Which dataset:\n(a) - income\n(b) - expenses\n(c) - income recycle bin\n(d) - expenses recycle bin\n(q) - quit\nType here: ", ['a', 'b', 'c', 'd', 'q'])
-            if df_user_in == 'a':
-                editor.df_editor(db_inc_data_fpaths, inc_recbin_path)
-            elif df_user_in == 'b':
-                editor.df_editor(db_exp_data_fpaths, exp_recbin_path)
-            elif df_user_in == 'c':
-                editor.df_editor([inc_recbin_path]) # function takes list of csvs as input
-            elif df_user_in == 'd':
-                editor.df_editor([exp_recbin_path])
+            editor.df_editor_menu(db_inc_data_fpaths, inc_recbin_path, db_exp_data_fpaths, exp_recbin_path)
+            
         elif user_in == 'q':
             print("Exited editor.")
             done = True
