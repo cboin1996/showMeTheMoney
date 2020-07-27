@@ -103,10 +103,12 @@ def remove_subframe(df_to_remove_from, df_to_remove, col_names):
     df.drop_duplicates(keep=False, inplace=True, subset=col_names)
 
     return df
-def write_data(df, out_filepath):
+def write_data(df, out_filepath, sortby=None):
     """
     Writes filtered data to csv db
     """
+    if sortby is not None:
+        df.sort_values(by=[sortby], inplace=True) # sort data by date.
     print(f"Wrote dataframe to {out_filepath}")
     df.to_csv(out_filepath, index=False)
     return
@@ -217,3 +219,13 @@ def match_mod_dict_vals(dct:dict, old_val:str, new_val:str):
     return dct
 
 
+def locate_and_move_data_between_dfs(df_to_move_from, rows, df_to_accept):
+    """
+    Select rows from df_to_move_from to df_to_accept
+    """
+    df_to_move = df_to_move_from.loc[rows]
+    df_to_move_from.drop(rows, inplace=True)
+    print(f"Moving below df.\n{df_to_move}\n")
+    df_to_accept = pd.concat([df_to_move, df_to_accept])
+
+    return df_to_move_from, df_to_accept
