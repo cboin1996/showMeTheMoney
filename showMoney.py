@@ -75,10 +75,9 @@ def check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adat
     if len(ndata_filepaths) != 0 and len(db_exp_data_fpaths) != 0 and len(db_inc_data_fpaths) != 0:
         df_new = data_help.load_and_process_csvs(file_paths=ndata_filepaths, strip_cols=[env.TYPE, env.BANK_STORENAME])
         df_inc_new, df_exp_new = data_help.filter_by_amnt(df_new, col_name=env.AMOUNT)
-        
-        df_exp_new.loc[:, env.FILT_STORENAME] = np.nan
-        df_exp_new.loc[:, env.EXPENSE] = np.nan # add NaN column to the expense df.
-        
+        df_inc_new = data_help.add_columns(df_inc_new, [env.ADJUSTMENT])
+
+        df_exp_new = data_help.add_columns(df_exp_new, [env.FILT_STORENAME, env.EXPENSE, env.ADJUSTMENT])
 
         df_exp = data_help.load_csvs(file_paths=db_exp_data_fpaths, strip_cols=[env.TYPE, env.BANK_STORENAME])
         df_inc = data_help.load_csvs(file_paths=db_inc_data_fpaths, strip_cols=[env.TYPE, env.BANK_STORENAME])
@@ -89,8 +88,9 @@ def check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adat
     elif len(ndata_filepaths) != 0:
         df_new = data_help.load_and_process_csvs(file_paths=ndata_filepaths, strip_cols=[env.TYPE, env.BANK_STORENAME])
         df_inc, df_exp = data_help.filter_by_amnt(df_new, col_name=env.AMOUNT)
-        df_exp.loc[:, env.EXPENSE] = np.nan # add NaN column to the expense df.
-        df_exp.loc[:, env.FILT_STORENAME] = np.nan
+        df_inc_new = data_help.add_columns(df_inc_new, [env.ADJUSTMENT])
+
+        df_exp_new = data_help.add_columns(df_exp_new, [env.FILT_STORENAME, env.EXPENSE, env.ADJUSTMENT])
 
     else:
         return False
@@ -100,7 +100,7 @@ def check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adat
     print("New data loaded locally.")
     print(f"INCOME\n\n{df_inc}\n\nYOUR IGNORED INCOME\n\n{df_inc_recbin}\n\nEXPENSES\n\n{df_exp}\n\nYOUR IGNORED EXPENSES\n\n{df_exp_recbin}\n")
     df_exp = data_help.drop_dups(df=df_exp, col_names=env.CHECK_FOR_DUPLICATES_COL_NAMES, ignore_index=True, strip_col=env.TYPE)
-    df_inc = data_help.drop_dups(df=df_inc, col_names=env.SB_INC_COLNAMES, ignore_index=True, strip_col=env.TYPE)
+    df_inc = data_help.drop_dups(df=df_inc, col_names=env.CHECK_FOR_DUPLICATES_COL_NAMES, ignore_index=True, strip_col=env.TYPE)
 
     df_exp = data_help.remove_subframe(df_to_remove_from=df_exp, df_to_remove=df_exp_recbin, col_names=env.CHECK_FOR_DUPLICATES_COL_NAMES)
     df_inc = data_help.remove_subframe(df_to_remove_from=df_inc, df_to_remove=df_inc_recbin, col_names=env.SB_INC_COLNAMES)
@@ -175,7 +175,10 @@ def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor
     """
     df_exp = data_help.load_csvs(db_exp_data_fpaths, dtype=env.SB_dtypes, parse_dates=env.SB_parse_dates, index=env.DATE)
     df_inc = data_help.load_csvs(db_inc_data_fpaths, dtype=env.INC_dtypes, parse_dates=env.SB_parse_dates, index=env.DATE) # TODO SHOW NET INCOME ON PLOTS
-    
+    df_exp = data_help.combine_and_drop(df_exp, env.AMOUNT, env.ADJUSTMENT, 'subtract')
+
+    df_inc = data_help.combine_and_drop(df_inc, env.AMOUNT, env.ADJUSTMENT, 'subtract')
+
     if df_inc.empty: # set index to datetime if empty.
         df_inc.set_index(pd.to_datetime(df_inc.index), inplace=True)
     

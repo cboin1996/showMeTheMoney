@@ -1,4 +1,4 @@
-# showMeTheMoney v1.20
+# showMeTheMoney v1.30
 An CLI app used for inputting banking data and plotting graphs for budgeting purposes.
 
 ### Dependencies
