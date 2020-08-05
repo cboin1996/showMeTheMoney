@@ -84,6 +84,16 @@ def drop_for_substring(df, col_name, lst_of_substrs, str_out=''):
         util.print_fulldf(df_to_drop)
         df = df[~df[col_name].str.contains("|".join(lst_of_substrs))] # filter out any credit payments from debit to here.
     return df
+
+def drop_rows(prompt, df):
+    util.print_fulldf(df)
+    rows = util.select_indices_of_list(prompt, list(df.index), abortable=True, abortchar='q', print_lst=False)
+    if rows is not None: # above returns none if user aborts
+        df.drop(index=rows, inplace=True)
+        return df
+    else:
+        return None
+
 def drop_dups(df, col_names, ignore_index=False, strip_col=None):
     """
     Drops any duplicates in a dataset, writes to file.
@@ -104,12 +114,19 @@ def remove_subframe(df_to_remove_from, df_to_remove, col_names):
     df.drop_duplicates(keep=False, inplace=True, subset=col_names)
 
     return df
-def write_data(df, out_filepath, sortby=None):
+    
+def write_data(df, out_filepath, sortby=None, fillna_col=None):
     """
-    Writes filtered data to csv db
+    Writes filtered data to csv db 
+
     """
     if sortby is not None:
         df.sort_values(by=[sortby], inplace=True) # sort data by date.
+
+    if fillna_col is not None:
+        for col in fillna_col:
+            df[col] = df[col].fillna(0.0)
+
     print(f"Wrote dataframe to {out_filepath}")
     df.to_csv(out_filepath, index=False)
     return
@@ -238,6 +255,26 @@ def locate_and_move_data_between_dfs(df_to_move_from, rows, df_to_accept):
     df_to_accept = pd.concat([df_to_move, df_to_accept])
 
     return df_to_move_from, df_to_accept
+
+def check_for_match_in_rows(rows, df, df_col_with_val, df_to_check, df_to_check_col, df_to_check_path):
+
+    for row in rows:
+        val = df.at[row, df_col_with_val]
+        matches = df_to_check.loc[df_to_check[df_to_check_col] == val]
+
+        if matches.empty: # catch if empty is returned
+            print("No matches found when restoring. ")
+        else:
+            print("\n I found the below transactions with the same dollar amount in the adjustment column: ")
+            util.print_fulldf(matches)
+            prompt = f"Which indices here are the matching transaction adjustment? Type (n) to ignore and restore anyways. "
+            match_idx_lst = matches.index.tolist()
+            idx = util.select_from_list(match_idx_lst, prompt, abortchar='a', ret_match=False, print_lst=False, check_contents=True)
+            if idx is not None: 
+                df_to_check.at[idx, df_to_check_col] = round(df_to_check.at[idx, df_to_check_col] - val, 2)
+                write_data(df_to_check, df_to_check_path) # write data out.
+            else: # none type indicates restore anyways
+                return None
 
 def combine_and_drop(df, col1, col2, operation : str):
     """

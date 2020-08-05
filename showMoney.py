@@ -107,8 +107,8 @@ def check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adat
 
     print(f"INCOME\n\n{df_inc}\n\nEXPENSES\n\n{df_exp}\n")
 
-    data_help.write_data(df_exp, os.path.join(db_exp_data_path, env.OUT_EXP_DATA_TEMPL), sortby=env.DATE)
-    data_help.write_data(df_inc, os.path.join(db_inc_data_path, env.OUT_INC_DATA_TEMPL), sortby=env.DATE)
+    data_help.write_data(df_exp, os.path.join(db_exp_data_path, env.OUT_EXP_DATA_TEMPL), sortby=env.DATE, fillna_col=[env.ADJUSTMENT])
+    data_help.write_data(df_inc, os.path.join(db_inc_data_path, env.OUT_INC_DATA_TEMPL), sortby=env.DATE, fillna_col=[env.ADJUSTMENT])
     timestamp = datetime.datetime.now().strftime("%m_%d_%Y__%H_%M_%S") + ".csv"
     data_help.move_files(files=ndata_filepaths, dest=os.path.join(adata_path, timestamp))
     print(f"Data imported to {db_inc_data_path} and {db_exp_data_path}. Old files moved to {adata_path}")

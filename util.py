@@ -89,15 +89,19 @@ def process_input(prompt):
     """
     return process_text(input(prompt))
 
-def select_from_list(lst, prompt, abortchar=None, ret_match=False):
+def select_from_list(lst, prompt, abortchar=None, ret_match=False, print_lst=True, check_contents=False):
     """
-    Allows user to select a single item from a list
+    Allows user to select a single item from a list by index
+    params:
+        check_contents - whether to check if user input is in the lst itself or not
     returns:
         if ret_match = False - returns index selection
         if ret_match = True - returns item at the index selection
+
     """
-    for i, elem in enumerate(lst):
-        print(f"\t[{i}] - {elem}")
+    if print_lst == True:
+        for i, elem in enumerate(lst):
+            print(f"\t[{i}] - {elem}")
     
     flag = False 
     while not flag:
@@ -109,7 +113,13 @@ def select_from_list(lst, prompt, abortchar=None, ret_match=False):
                 return None
             else:
                 user_sel = int(raw_in)
-            if user_sel > len(lst) - 1 or user_sel < 0:
+            
+            if check_contents == True:
+                if user_sel in lst:
+                    flag = True
+                else:
+                    print(f"Please enter a value within the list. options are: {lst}")
+            elif user_sel > len(lst) - 1 or user_sel < 0:
                 print(f"Please enter a number between 0 and {len(lst) - 1}")
             else:
                 user_sel = int(raw_in)
@@ -121,6 +131,7 @@ def select_from_list(lst, prompt, abortchar=None, ret_match=False):
     if ret_match == True:
         user_sel = lst[user_sel]
     return user_sel 
+
 
 def select_dict_key_using_integer(dct, prompt, print_children=True, quit_str='', print_aborting=True):
     """
