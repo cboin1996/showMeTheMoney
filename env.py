@@ -3,12 +3,13 @@ import re
 import pandas as pd
 
 
-VERSION = "1.20"
+VERSION = "1.30"
 """
 Dataframe Headers
 """
 DATE = 'Date'
 AMOUNT = 'Amount'
+ADJUSTMENT = 'Adjustment'
 NULL = 'Null'
 TYPE = 'Type'
 BANK_STORENAME = 'BankStoreName'
@@ -22,12 +23,12 @@ SB_BASE_CREDIT_COLNAMES = [DATE, BANK_STORENAME, AMOUNT]
 SB_BASE_DEBIT_COLNAMES = [DATE, AMOUNT, NULL, TYPE, BANK_STORENAME]
 SB_INC_COLNAMES = [DATE, AMOUNT, TYPE, BANK_STORENAME]
 
-COLUMN_NAMES = [DATE, AMOUNT, TYPE, BANK_STORENAME, FILT_STORENAME, EXPENSE]
-
+COLUMN_NAMES = [DATE, AMOUNT, ADJUSTMENT, TYPE, BANK_STORENAME, FILT_STORENAME, EXPENSE]
+INC_COL_NAMES = [DATE, AMOUNT, ADJUSTMENT, TYPE, BANK_STORENAME]
 CHECK_FOR_DUPLICATES_COL_NAMES = [DATE, AMOUNT, TYPE, BANK_STORENAME]
 
-INC_dtypes = {DATE : 'str', AMOUNT : 'float', TYPE : 'str', BANK_STORENAME : "str"}
-SB_dtypes = {DATE : 'str', AMOUNT : 'float', TYPE : 'str', BANK_STORENAME : "str", FILT_STORENAME : "str", EXPENSE : 'str'}
+INC_dtypes = {DATE : 'str', AMOUNT : 'float', ADJUSTMENT : 'float', TYPE : 'str', BANK_STORENAME : "str"}
+SB_dtypes = {DATE : 'str', AMOUNT : 'float', ADJUSTMENT : 'float', TYPE : 'str', BANK_STORENAME : "str", FILT_STORENAME : "str", EXPENSE : 'str'}
 SB_parse_dates = ['Date']
 mydateparser = lambda x: pd.datetime.strptime(x, "%Y-%m-%d")
 

@@ -38,8 +38,8 @@ def df_editor(df_to_move_from_path, df_to_move_to_path = None, restorable=False,
             df_to_move_to = data_help.load_csv(df_to_move_to_path, dtype=env.SB_dtypes, parse_dates=env.SB_parse_dates)
 
         if restorable == False:
-            prompt = "Whould you like to: \n(a) - move transactions to the recycle bin\n(q) - quit\nType here: "
-            input_chars = ['a', 'q']
+            prompt = "Whould you like to: \n(a) - move transactions to the recycle bin\n(b) - adjust a transaction price\n(q) - quit\nType here: "
+            input_chars = ['a', 'b', 'q']
         else:
             prompt = "Whould you like to: \n(a) - delete a row from the recycle bin\n(b) - restore from recycling\n(q) - quit\nType here: "
             recycle = False # if user is in recycle bin, deleting removes permanently
@@ -50,9 +50,11 @@ def df_editor(df_to_move_from_path, df_to_move_to_path = None, restorable=False,
         if user_in ==  'a':
             df_swap("Which rows? (q) to abort? ", df_to_move_from, df_to_move_to, df_to_move_from_path, df_to_move_to_path, recycle=recycle)
                     
-        elif user_in == 'b':
+        elif user_in == 'b' and restorable == True:
             df_swap("Which row or rows would you like to restore (q) to abort? ", df_to_move_from, df_to_move_to, df_to_move_from_path, df_to_move_to_path, recycle=True)
-
+        elif user_in == 'b' and restorable == False:
+            edit_cell_in_dfcol(df_to_move_from_path, df_to_move_from, col_name=env.ADJUSTMENT, col_type='float')
+  
         elif user_in == 'q':
             done = True
 
@@ -269,29 +271,39 @@ def remove_expense_from_dbs(exp_db_data_filepath, exp_stor_data, exp_data, budg_
     else:
         print(f"'{env.EXPENSE_MISC_STR}' is a reserved expense category, and it cannot be deleted.")
 
-def edit_cell_in_dfcol(db_data_filepath : str, df, col_name, opt_col, opt_dict):
+def edit_cell_in_dfcol(db_data_filepath : str, df, col_name, opt_col=None, opt_dict=None, col_type=None):
     """
     Edits a single cell in the df based upon options provided in opt_dict
     params:
         db_data_filepath - the path to the dataframes csv data
         df - (DataFrame) object
         col_name - the column to set the new value of
-        opt_col - the column to grab a key from to search opt_dict for the list of options
+        opt_col - the column to grab a key from to search opt_dict for the list of options. If none, user can edit cell manually with input
         opt_dict - the dictionary containing the pairs between keys and options for a key
+        col_type - the columns type to check for on user inputs
     """
     index_list = df.index.tolist()
     print(df)
-    prompt = "Select some indices from the above dataframe to edit: (q) to quit: "
+    prompt = f"Select some indices from the above dataframe column '{col_name}' to edit: (q) to quit: "
     indices = util.select_indices_of_list(prompt, index_list, return_matches=True, abortable=True, abortchar='q', print_lst=False)
     if indices != None:
         for index in indices:
-            opt_key = df.loc[index, opt_col]
-            option = util.select_from_list(opt_dict[opt_key], f"Please select an option for cell [{index}] col '{col_name}' or (q) to quit: ", abortchar='q', ret_match=True)
-            if option != None:
-                df.at[index, col_name] = option
-                data_help.write_data(df, db_data_filepath)
+            if opt_col != None:
+                opt_key = df.loc[index, opt_col]
+                val = util.select_from_list(opt_dict[opt_key], f"Please select an option for cell [{index}] col '{col_name}' or (q) to quit: ", abortchar='q', ret_match=True)
+            
             else:
-                break
+                if col_type == 'float':
+                    val = util.get_float_input(f"Please input ({col_type}) for this entry: ", force_pos=False, roundto=2)
+
+            
+            if val != None: # nonetype aborts
+                df.at[index, col_name] = val
+                data_help.write_data(df, db_data_filepath)
+            
+            else:
+                 break
+
 
 def add_expense(exp_data, exp_stor_data, exp_path, exp_stor_data_path):
     """

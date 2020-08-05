@@ -94,6 +94,7 @@ def drop_dups(df, col_names, ignore_index=False, strip_col=None):
 
     return df
 
+
 def remove_subframe(df_to_remove_from, df_to_remove, col_names):
     """
     Used to drop the a dataframe from within another
@@ -113,6 +114,14 @@ def write_data(df, out_filepath, sortby=None):
     df.to_csv(out_filepath, index=False)
     return
 
+def add_columns(df, colnames_to_add):
+    """
+    Adds empty column names to df
+    """
+
+    for colname in colnames_to_add:
+        df.loc[:, colname] = np.nan
+    return df
 def move_files(files, dest):
     """
     """
@@ -229,3 +238,21 @@ def locate_and_move_data_between_dfs(df_to_move_from, rows, df_to_accept):
     df_to_accept = pd.concat([df_to_move, df_to_accept])
 
     return df_to_move_from, df_to_accept
+
+def combine_and_drop(df, col1, col2, operation : str):
+    """
+    Combines two columns, dropping col2 from the dataframe
+    params:
+        df - the pandas df
+        col1 - the column name to add or subtract to
+        col2 - the column name that gets added or is the amount to subtract
+        operation - string for add, subtract
+    """
+    df[col2] = df[col2].fillna(0)
+    if operation == 'subtract':
+        df[col1] = df[col1] - df[col2]
+    elif operation == 'add':
+        df[col1] = df[col1] + df[col2]
+    df.drop(columns=[col2], inplace=True)
+
+    return df
