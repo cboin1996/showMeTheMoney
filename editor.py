@@ -1,75 +1,12 @@
 import json
 import os 
 import pandas as pd
+import numpy as np
 
 import util 
 import data_help
 import env
 import expManager
-
-def df_editor_menu(db_inc_data_fpaths, inc_recbin_path, db_exp_data_fpaths, exp_recbin_path):
-    done = False
-    while not done:
-        df_user_in = util.get_user_input_for_chars("Which dataset:\n(a) - income\n(b) - expenses\n(c) - income recycle bin\n(d) - expenses recycle bin\n(q) - quit\nType here: ", ['a', 'b', 'c', 'd', 'q'])
-        if df_user_in == 'a':
-            df_editor(db_inc_data_fpaths[0], df_to_move_to_path=inc_recbin_path)
-        elif df_user_in == 'b':
-            df_editor(db_exp_data_fpaths[0], df_to_move_to_path=exp_recbin_path)
-        elif df_user_in == 'c':
-            df_editor(inc_recbin_path, df_to_move_to_path=db_inc_data_fpaths[0], restorable=True) # function takes list of csvs as input
-        elif df_user_in == 'd':
-            df_editor(exp_recbin_path, df_to_move_to_path=db_exp_data_fpaths[0], restorable=True) 
-        elif df_user_in == 'q':
-            done = True
-
-def df_editor(df_to_move_from_path, df_to_move_to_path = None, restorable=False, recycle=True):
-    """
-    Allows the editing of a dataframe
-    params:
-        df_filepaths - the dataframe file paths to edit
-        recbin_path - the recyclebin path (default None) if None, do not recycle
-        restorable - whether or not the df is restorable
-        recycle - whether or not data deleted from a frame will be moved to anotehr or lost
-    """
-    done = False
-    while not done:
-        df_to_move_from = data_help.load_csv(df_to_move_from_path, dtype=env.SB_dtypes, parse_dates=env.SB_parse_dates)
-        if df_to_move_to_path is not None:
-            df_to_move_to = data_help.load_csv(df_to_move_to_path, dtype=env.SB_dtypes, parse_dates=env.SB_parse_dates)
-
-        if restorable == False:
-            prompt = "Whould you like to: \n(a) - move transactions to the recycle bin\n(b) - adjust a transaction price\n(q) - quit\nType here: "
-            input_chars = ['a', 'b', 'q']
-        else:
-            prompt = "Whould you like to: \n(a) - delete a row from the recycle bin\n(b) - restore from recycling\n(q) - quit\nType here: "
-            recycle = False # if user is in recycle bin, deleting removes permanently
-            input_chars = ['a', 'b', 'q']
-
-        user_in = util.get_user_input_for_chars(prompt, input_chars)
-
-        if user_in ==  'a':
-            df_swap("Which rows? (q) to abort? ", df_to_move_from, df_to_move_to, df_to_move_from_path, df_to_move_to_path, recycle=recycle)
-                    
-        elif user_in == 'b' and restorable == True:
-            df_swap("Which row or rows would you like to restore (q) to abort? ", df_to_move_from, df_to_move_to, df_to_move_from_path, df_to_move_to_path, recycle=True)
-        elif user_in == 'b' and restorable == False:
-            edit_cell_in_dfcol(df_to_move_from_path, df_to_move_from, col_name=env.ADJUSTMENT, col_type='float')
-  
-        elif user_in == 'q':
-            done = True
-
-def df_swap(prompt, df_to_move_from, df_to_move_to, df_to_move_from_path, df_to_move_to_path, recycle=True):
-    util.print_fulldf(df_to_move_from)
-    rows = util.select_indices_of_list(prompt, list(df_to_move_from.index), abortable=True, abortchar='q', print_lst=False)
-    if rows is not None: # above returns none if user aborts
-        if recycle == True: # if recycle bin is wanted, perform the move between dataframes
-            df_to_move_from, df_to_move_to = data_help.locate_and_move_data_between_dfs(df_to_move_from, rows, df_to_move_to)
-            data_help.write_data(df_to_move_to, df_to_move_to_path, sortby=env.DATE)
-            
-        else: # drop and dont recycle
-            df_to_move_from.drop(index=rows, inplace=True)
-
-        data_help.write_data(df_to_move_from, df_to_move_from_path, sortby=env.DATE)
 
 def store_editor(exp_db_data_filepaths, stor_pair_path, exp_stor_data_path, budg_path, exp_path):
     """
@@ -283,7 +220,7 @@ def edit_cell_in_dfcol(db_data_filepath : str, df, col_name, opt_col=None, opt_d
         col_type - the columns type to check for on user inputs
     """
     index_list = df.index.tolist()
-    print(df)
+    util.print_fulldf(df)
     prompt = f"Select some indices from the above dataframe column '{col_name}' to edit: (q) to quit: "
     indices = util.select_indices_of_list(prompt, index_list, return_matches=True, abortable=True, abortchar='q', print_lst=False)
     if indices != None:
@@ -383,6 +320,137 @@ def remove_exp_from_store(df_path, df, exp_stor_data, exp_stor_data_path):
                     edit_df_entries_given_columns(df, df_path, env.EXPENSE, env.FILT_STORENAME, storename, rem_exp, new_exp)
                 data_help.write_to_jsonFile(exp_stor_data_path, exp_stor_data)
 
+def df_editor_menu(db_inc_data_fpaths, inc_recbin_path, db_exp_data_fpaths, exp_recbin_path):
+    done = False
+    while not done:
+        prompt = "Which one:\n(a) - income\n(b) - expenses\n(c) - income recycle bin\n"
+        prompt = prompt + "(d) - expenses recycle bin\n(e) - transaction prices\n(q) - quit\nType here: "
+        df_user_in = util.get_user_input_for_chars(prompt, ['a', 'b', 'c', 'd', 'q'])
+        if df_user_in == 'a':
+            df_editor(db_inc_data_fpaths[0], df_to_move_to_path=inc_recbin_path, 
+                      df_with_reductions_path=db_exp_data_fpaths[0], df_to_move_reduction_to_path=exp_recbin_path)
+        elif df_user_in == 'b':
+            df_editor(db_exp_data_fpaths[0], df_to_move_to_path=exp_recbin_path, 
+                      df_with_reductions_path=db_inc_data_fpaths[0], df_to_move_reduction_to_path=inc_recbin_path)
+        elif df_user_in == 'c':
+            df_editor(inc_recbin_path, df_to_move_to_path=db_inc_data_fpaths[0], restorable=True, df_with_reductions_path=db_exp_data_fpaths[0]) # function takes list of csvs as input
+        elif df_user_in == 'd':
+            df_editor(exp_recbin_path, df_to_move_to_path=db_exp_data_fpaths[0], restorable=True, df_with_reductions_path=db_inc_data_fpaths[0]) 
+        elif df_user_in == 'q':
+            done = True
+
+def df_editor(df_to_move_from_path, df_to_move_to_path = None, restorable=False, recycle=True, df_with_reductions_path=None,  df_to_move_reduction_to_path=None):
+    """
+    Allows the editing of a dataframe
+    params:
+        df_to_move_from_path - the dataframe file paths to edit
+        df_to_move_to_path - the recyclebin path (default None)
+        restorable - whether or not the df is restorable, if True, will not recycle
+        recycle - whether or not data deleted from a frame will be moved to another or lost
+        df_with_reductions_path - the path to the dataframe containing prices to reduce df_to_move_from_path by
+    """
+    done = False
+    while not done:
+        df_to_move_from = data_help.load_csv(df_to_move_from_path, dtype=env.SB_dtypes, parse_dates=env.SB_parse_dates)
+        
+        if df_to_move_to_path is not None:
+            df_to_move_to = data_help.load_csv(df_to_move_to_path, dtype=env.SB_dtypes, parse_dates=env.SB_parse_dates)
+        
+        if df_with_reductions_path is not None:
+            df_with_reductions = data_help.load_csv(df_with_reductions_path, dtype=env.SB_dtypes, parse_dates=env.SB_parse_dates)
+
+        if df_to_move_reduction_to_path is not None:
+            df_to_move_reduction_to = data_help.load_csv(df_to_move_reduction_to_path, dtype=env.SB_dtypes, parse_dates=env.SB_parse_dates)
+        
+        if restorable == False:
+            prompt = "Would you like to: \n(a) - move transactions to the recycle bin\n(b) - adjust a transaction price manually\n"
+            prompt = prompt + "(c) - reduce a transaction by another\n(q) - quit\nType here: "
+            input_chars = ['a', 'b', 'c', 'q']
+        else:
+            prompt = "Would you like to: \n(a) - delete a row from the recycle bin\n(b) - restore from recycling\n(q) - quit\nType here: "
+            recycle = False # if user is in recycle bin, deleting removes permanently
+            input_chars = ['a', 'b', 'q']
+
+        user_in = util.get_user_input_for_chars(prompt, input_chars)
+
+        if user_in ==  'a' and recycle == True: # expenses or income case
+            df_swap("Which rows would you like to recycle? (q) to abort? ", df_to_move_from, df_to_move_to, df_to_move_from_path, df_to_move_to_path)
+        
+        elif user_in == 'a' and recycle == False:
+            df_to_move_from = data_help.drop_rows("Which rows would you like to delete? (q) to abort? ", df_to_move_from)
+            if df_to_move_from is not None: # none type aborts
+                data_help.write_data(df_to_move_from, df_to_move_from_path)
+
+        elif user_in == 'b' and restorable == True:
+            df_swap("Which row or rows would you like to restore (q) to abort? ", df_to_move_from, df_to_move_to, 
+                    df_to_move_from_path, df_to_move_to_path, cross_check_df=df_with_reductions, cross_check_col=env.ADJUSTMENT, cross_check_df_path=df_with_reductions_path)
+        
+        elif user_in == 'b' and restorable == False:
+            edit_cell_in_dfcol(df_to_move_from_path, df_to_move_from, col_name=env.ADJUSTMENT, col_type='float')
+        
+        elif user_in =='c' and restorable == False:
+            edit_df_transaction_price(df_to_edit=df_to_move_from, df_to_edit_path=df_to_move_from_path, col_to_use=env.ADJUSTMENT, df_to_move_reduction_to=df_to_move_reduction_to, 
+                                      df_to_move_reduction_to_path=df_to_move_reduction_to_path, df_with_reductions=df_with_reductions, df_with_reductions_path=df_with_reductions_path,
+                                      reduction_col=env.AMOUNT)
+  
+        elif user_in == 'q':
+            done = True
+
+def edit_df_transaction_price(df_to_edit, df_to_edit_path, col_to_use, df_to_move_reduction_to, df_to_move_reduction_to_path, df_with_reductions, df_with_reductions_path, reduction_col):
+    """
+    params:
+        df_to_edit - the dataframe to edit the price on
+        col_to_use - the column across all dataframes to be using
+        df_with_reductions - the dataframe carrying transaction values that can be inserted into df_to_edit
+        df_to_move_reduction_to - the df that will take the reduction transaction from df_with_reductions
+        reduction_col - the column to grab reduction value from
+    """
+    index_list = df_to_edit.index.tolist()
+    util.print_fulldf(df_to_edit)
+    prompt = f"Select some indices from the above dataframe column '{col_to_use}' to edit: (q) to quit: "
+    indices = util.select_indices_of_list(prompt, index_list, return_matches=True, abortable=True, abortchar='q', print_lst=False)
+    if indices is not None: # none type aborts
+        for index in indices:
+            reductions_index_list = df_with_reductions.index.tolist()
+            util.print_fulldf(df_with_reductions)
+            prompt = f"Which index contains the transaction you want? (q) to quit: "
+            reduction_index = util.select_from_list(reductions_index_list, prompt, abortchar='q', ret_match=False, print_lst=False)
+            if reduction_index is not None: # none type aborts
+                val = df_with_reductions.at[reduction_index,reduction_col]
+                if df_to_edit.at[index, col_to_use] == np.nan: # check for nan value
+                    df_to_edit.at[index, col_to_use] = 0.0
+                df_to_edit.at[index, col_to_use] = df_to_edit.at[index, col_to_use] + val
+                df_swap(df_to_move_from=df_with_reductions, df_to_move_to=df_to_move_reduction_to, df_to_move_from_path=df_with_reductions_path,
+                        df_to_move_to_path=df_to_move_reduction_to_path, rows=[reduction_index]) # writes changes
+            else:
+                break
+        
+        data_help.write_data(df_to_edit, df_to_edit_path, sortby=env.DATE) # writes changes to the edited df.
+    
+
+            
+def df_swap(prompt=None, df_to_move_from=None, df_to_move_to=None, df_to_move_from_path=None, df_to_move_to_path=None, rows=None,
+            cross_check_df=None, cross_check_col=None, cross_check_df_path=None):
+    """
+    Performs a swap of data from one dataframe to another
+    params
+        prompt - the output to the user
+        df_to_move_from - the dataframe to move rows from
+        df_to_move_to - the dataframe to move the rows to
+        rows - (default) None. If none, will prompt user, else will use the given rows to perform a swap.
+        cross_check_df - perform a cross check on this dataframe for a value in cross_check_col and return matches
+        cross_check_col - column to perform the cross check on
+    """
+    if rows is None:
+        util.print_fulldf(df_to_move_from)
+        rows = util.select_indices_of_list(prompt, list(df_to_move_from.index), abortable=True, abortchar='q', print_lst=False)
+    if rows is not None: # above returns none if user aborts
+        if cross_check_df is not None:
+            data_help.check_for_match_in_rows(rows, df_to_move_from, env.AMOUNT, cross_check_df, cross_check_col, cross_check_df_path)
+
+        df_to_move_from, df_to_move_to = data_help.locate_and_move_data_between_dfs(df_to_move_from, rows, df_to_move_to)
+        data_help.write_data(df_to_move_to, df_to_move_to_path, sortby=env.DATE)
+        data_help.write_data(df_to_move_from, df_to_move_from_path, sortby=env.DATE)
 
 def edit_df_entries(df, df_path, column_name, old_entry, new_entry):
     """

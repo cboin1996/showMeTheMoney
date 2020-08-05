@@ -29,7 +29,7 @@ CHECK_FOR_DUPLICATES_COL_NAMES = [DATE, AMOUNT, TYPE, BANK_STORENAME]
 
 INC_dtypes = {DATE : 'str', AMOUNT : 'float', ADJUSTMENT : 'float', TYPE : 'str', BANK_STORENAME : "str"}
 SB_dtypes = {DATE : 'str', AMOUNT : 'float', ADJUSTMENT : 'float', TYPE : 'str', BANK_STORENAME : "str", FILT_STORENAME : "str", EXPENSE : 'str'}
-SB_parse_dates = ['Date']
+SB_parse_dates = [DATE]
 mydateparser = lambda x: pd.datetime.strptime(x, "%Y-%m-%d")
 
 """
