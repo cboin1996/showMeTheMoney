@@ -28,8 +28,8 @@ INC_COL_NAMES = [DATE, AMOUNT, ADJUSTMENT, TYPE, BANK_STORENAME]
 CHECK_FOR_DUPLICATES_COL_NAMES = [DATE, AMOUNT, TYPE, BANK_STORENAME]
 
 INC_dtypes = {DATE : 'str', AMOUNT : 'float', ADJUSTMENT : 'float', TYPE : 'str', BANK_STORENAME : "str"}
-SB_dtypes = {DATE : 'str', AMOUNT : 'float', ADJUSTMENT : 'float', TYPE : 'str', BANK_STORENAME : "str", FILT_STORENAME : "str", EXPENSE : 'str'}
-SB_parse_dates = [DATE]
+expdf_types = {DATE : 'str', AMOUNT : 'float', ADJUSTMENT : 'float', TYPE : 'str', BANK_STORENAME : "str", FILT_STORENAME : "str", EXPENSE : 'str'}
+pdates_colname = [DATE]
 mydateparser = lambda x: pd.datetime.strptime(x, "%Y-%m-%d")
 
 """
@@ -62,10 +62,11 @@ OUT_EXP_DATA_TEMPL = "exp_db.csv"
 OUT_INC_DATA_TEMPL = "inc_db.csv"
 OUT_DATA_CHKSZ = 3
 csv = "*.csv"
-EXP_STOR_DB_FNAME = os.path.join('lib', 'storesWithExpenses.json')
-BUDGET_FNAME = os.path.join('lib', 'Budget.json')
-STORE_PAIR_FNAME = os.path.join('lib', 'storePairs.json')
-EXP_FNAME = os.path.join('lib', 'expenses.json')
+EXP_STOR_DB_FNAME = 'storesWithExpenses.json'
+BUDGET_FNAME = 'Budget.json'
+STORE_PAIR_FNAME = 'storePairs.json'
+EXP_FNAME = 'expenses.json'
+NOTES_FNAME = 'monthly_notes.json'
 
 EXPENSE_DATA_KEY = 'expense'
 BUDGET_TOTAL_KEY = 'total'

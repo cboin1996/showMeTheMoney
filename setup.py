@@ -7,5 +7,5 @@ setup(name='ShowMeYourMoney',
       author='Christian Boin',
       author_email='cboin1996@gmail.com',
       packages=find_packages(),
-      install_requires=['pandas', 'numpy', 'matplotlib'],
+      install_requires=['pandas', 'numpy', 'matplotlib', 'pyautogui'],
      )

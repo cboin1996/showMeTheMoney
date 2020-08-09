@@ -95,8 +95,8 @@ def check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adat
     else:
         return False
 
-    df_exp_recbin = data_help.load_csv(exp_recbin_path, dtype=env.SB_dtypes, parse_dates=env.SB_parse_dates)
-    df_inc_recbin = data_help.load_csv(inc_recbin_path, dtype=env.INC_dtypes, parse_dates=env.SB_parse_dates)   
+    df_exp_recbin = data_help.load_csv(exp_recbin_path, dtype=env.expdf_types, parse_dates=env.pdates_colname)
+    df_inc_recbin = data_help.load_csv(inc_recbin_path, dtype=env.INC_dtypes, parse_dates=env.pdates_colname)   
     print("New data loaded locally.")
     print(f"INCOME\n\n{df_inc}\n\nYOUR IGNORED INCOME\n\n{df_inc_recbin}\n\nEXPENSES\n\n{df_exp}\n\nYOUR IGNORED EXPENSES\n\n{df_exp_recbin}\n")
     df_exp = data_help.drop_dups(df=df_exp, col_names=env.CHECK_FOR_DUPLICATES_COL_NAMES, ignore_index=True, strip_col=env.TYPE)
@@ -114,7 +114,7 @@ def check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adat
     print(f"Data imported to {db_inc_data_path} and {db_exp_data_path}. Old files moved to {adata_path}")
     return True
 
-def edit_money_data(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path, db_inc_data_fpaths, exp_recbin_path, inc_recbin_path):
+def edit_money_data(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path, db_inc_data_fpaths, exp_recbin_path, inc_recbin_path, notes_path):
     """
     Top level interface for editing databases
     params:
@@ -127,8 +127,15 @@ def edit_money_data(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg
         exp_recbin_path - the path to the expense recycle bin csv
         inc_recbin_path - the path to the income recycle bin csv
     """   
-    prompt = "Would you like to edit:\n(a) - storenames\n(b) - budget amounts\n(c) - expenses\n(d) - imported data\n(q) to quit?\nType Here: "
-    prompt_chars = ['a', 'b', 'c', 'd', 'q']
+    prompt = "\n".join(("Would you like to edit:",
+                         "(a) - storenames",
+                         "(b) - budget amounts",
+                         "(c) - expenses",
+                         "(d) - imported data",
+                         "(e) - notes",
+                         "(q) to quit?",
+                         "Type Here: "))
+    prompt_chars = ['a', 'b', 'c', 'd', 'e', 'q']
     done = False
     while not done:
         print("          ----|$$| EDITOR MENU |$$|----         ")
@@ -141,6 +148,8 @@ def edit_money_data(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg
             editor.expenses_editor(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path)
         elif user_in == 'd':
             editor.df_editor_menu(db_inc_data_fpaths, inc_recbin_path, db_exp_data_fpaths, exp_recbin_path)
+        elif user_in == 'e':
+            editor.notes_editor(db_exp_data_fpaths, db_inc_data_fpaths, notes_path)
 
         elif user_in == 'q':
             print("Exited editor.")
@@ -150,7 +159,7 @@ def get_expenses(db_exp_data_fpaths: list, db_inc_data_fpaths: list, stor_pair_p
     """
     main method for the importing of expense data
     """
-    exp_df = data_help.load_csvs(db_exp_data_fpaths, dtype=env.SB_dtypes, parse_dates=env.SB_parse_dates)# only using on csv db for now. newest will be last? idk verify later.
+    exp_df = data_help.load_csvs(db_exp_data_fpaths, dtype=env.expdf_types, parse_dates=env.pdates_colname)# only using on csv db for now. newest will be last? idk verify later.
     exp_df = data_help.drop_for_substring(exp_df, env.BANK_STORENAME, env.IGNORABLE_TRANSACTIONS, 
                                           "\nRemoving the below expense transactions as they are either an internal bank acct transfer, cash advance or credit payment.")
     dates = data_help.extract_months(exp_df[env.DATE], start=False)
@@ -162,19 +171,19 @@ def get_income(db_inc_data_fpaths: list):
     """
     main method for the importing of income data
     """
-    inc_df = data_help.load_csvs(db_inc_data_fpaths, dtype=env.INC_dtypes, parse_dates=env.SB_parse_dates)
+    inc_df = data_help.load_csvs(db_inc_data_fpaths, dtype=env.INC_dtypes, parse_dates=env.pdates_colname)
     inc_df = data_help.drop_for_substring(inc_df, env.BANK_STORENAME, env.IGNORABLE_TRANSACTIONS, 
                                           "\nRemoving the below income transactions as they are either an internal bank acct transfer, cash advance or credit payment.")
     data_help.write_data(inc_df, db_inc_data_fpaths[0])
     print("\nFinished gathering your income data: \n")
     util.print_fulldf(inc_df)
 
-def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path):
+def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, notes_path):
     """
     main method for the viewing of data
     """
-    df_exp = data_help.load_csvs(db_exp_data_fpaths, dtype=env.SB_dtypes, parse_dates=env.SB_parse_dates, index=env.DATE)
-    df_inc = data_help.load_csvs(db_inc_data_fpaths, dtype=env.INC_dtypes, parse_dates=env.SB_parse_dates, index=env.DATE) # TODO SHOW NET INCOME ON PLOTS
+    df_exp = data_help.load_csvs(db_exp_data_fpaths, dtype=env.expdf_types, parse_dates=env.pdates_colname, index=env.DATE)
+    df_inc = data_help.load_csvs(db_inc_data_fpaths, dtype=env.INC_dtypes, parse_dates=env.pdates_colname, index=env.DATE) # TODO SHOW NET INCOME ON PLOTS
     df_exp = data_help.combine_and_drop(df_exp, env.AMOUNT, env.ADJUSTMENT, 'subtract')
 
     df_inc = data_help.combine_and_drop(df_inc, env.AMOUNT, env.ADJUSTMENT, 'subtract')
@@ -185,7 +194,9 @@ def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor
     budg_db = data_help.read_jsonFile(budg_path) # load the budget data
     df_budg = pd.DataFrame(budg_db)
     df_budg = df_budg.T # transpose to make index date str
-    df_budg.set_index(pd.to_datetime(df_budg.index), inplace=True) # set index to date time
+    df_budg.set_index(pd.to_datetime(df_budg.index), inplace=True) # set index to date time 
+
+    notes_dict = data_help.read_jsonFile(notes_path)
 
     years = data_help.extract_years(df_exp.index.to_series())
     years_to_show = util.select_indices_of_list("Which of the above year(s) would you like to take a peak at - or 'q' to quit: ", years, return_matches=True, abortable=True, abortchar='q')
@@ -218,12 +229,13 @@ def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor
 
             title_templ = "%s\nIncome: %s | Expenses: %s | Budget: %s\nNet Income: %s | Budget Rem.: %s"
             budg_plotter(df_exp_budg_per_month, df_exp_budg_per_month.groupby(level=0).sum(), df_inc, (15,12), nrows=3, ncols=1, 
-                        subfigs_per_fig=3, title_templ=title_templ, show=False, sort_by_level=0)
+                        subfigs_per_fig=3, title_templ=title_templ, show=False, sort_by_level=0, notes=notes_dict, tbox_color='wheat', tbox_style='round', tbox_alpha=0.5)
             budg_plotter(df_exp_stor_per_month, df_exp_budg_per_month.groupby(level=0).sum(), df_inc, (15,12), nrows=3, ncols=1, 
-                        subfigs_per_fig=3, title_templ=title_templ, show=True, sort_by_level=0)
+                        subfigs_per_fig=3, title_templ=title_templ, show=True, sort_by_level=0, notes=notes_dict, tbox_color='wheat', tbox_style='round', tbox_alpha=0.5)
     
 
-def budg_plotter(df_to_plot, budget_df, df_inc, figsize=None, nrows=None, ncols=None, subfigs_per_fig=None, title_templ="", show=True, sort_by_level=None):
+def budg_plotter(df_to_plot, budget_df, df_inc, figsize=None, nrows=None, ncols=None, subfigs_per_fig=None, title_templ="", show=True, 
+                 sort_by_level=None, notes=None, tbox_color=None, tbox_style=None, tbox_alpha=None):
     """
     Given a multindex dataframe, plots the data
     params:
@@ -236,11 +248,16 @@ def budg_plotter(df_to_plot, budget_df, df_inc, figsize=None, nrows=None, ncols=
         title_templ - the unformatted string for formatting
         show - boolean allowing the function to be chained, showing all plots at once at the end.
         sort_by_level - the level of the multiindex to sort by. Note, use n-1 since the first index is dropped for plotting
+        notes - Textbox text dict {date : note} to add to figures
+        tbox_color - Colour of textbox, 
+        tbox_style - Style of textbox (see matplolib), 
+        tbox_alpha - transparency of textbox
     """
     plt.figure(figsize=figsize, facecolor='white')
     plot_idx = 1
 
     for date, sub_df in df_to_plot.groupby(level=0):
+        str_date = date.strftime("%Y-%m-%d")
         if plot_idx > subfigs_per_fig:
             plt.tight_layout()
             plt.figure(figsize=figsize, facecolor='white')
@@ -250,6 +267,8 @@ def budg_plotter(df_to_plot, budget_df, df_inc, figsize=None, nrows=None, ncols=
 
         if sort_by_level != None:
             sub_df = sub_df.sort_index(level=sort_by_level)
+
+        
         ax = plt.subplot(nrows, ncols, plot_idx)
 
         month_exp_tot = round(budget_df.loc[f"{date.year}-{date.month}", env.AMOUNT].sum(), 2)
@@ -267,6 +286,13 @@ def budg_plotter(df_to_plot, budget_df, df_inc, figsize=None, nrows=None, ncols=
         ax.set_title(title)
         sub_ax = sub_df.plot.bar(ax=ax)
 
+        if (tbox_color is not None and tbox_style is not None and tbox_alpha is not None) and str_date in notes.keys(): # check to ensure params are passed, and notes dict contains the date
+            if notes[str_date] != "": # ignore adding box if note is empty
+                tbox_txt = bytes(notes[str_date], 'UTF-8') # encode to bytes
+                tbox_txt = tbox_txt.decode('unicode-escape') # decode to get the newline characters working
+                plt.text(0.15, 0.95, tbox_txt, transform=sub_ax.transAxes, fontsize=8, verticalalignment='top', 
+                        bbox={'boxstyle' : tbox_style, 'facecolor' : tbox_color, 'alpha' : tbox_alpha})
+
         for l in sub_ax.get_xticklabels():
             l.set_rotation(45)
             l.set_ha('right')
@@ -277,6 +303,7 @@ def budg_plotter(df_to_plot, budget_df, df_inc, figsize=None, nrows=None, ncols=
                 p.set_color('#ff2b2b')
 
         plot_idx += 1
+
     plt.tight_layout()
     if show == True:
         plt.show()
@@ -332,15 +359,17 @@ if __name__=="__main__":
                     exp_recbin_data_path,
                     inc_recbin_data_path]
 
-    budg_path = os.path.join(root, env.BUDGET_FNAME)
-    stor_exp_data_path = os.path.join(root, env.EXP_STOR_DB_FNAME)
-    stor_pair_path = os.path.join(root, env.STORE_PAIR_FNAME)
-    exp_path = os.path.join(root, env.EXP_FNAME)
+    budg_path = os.path.join(lib_data_path, env.BUDGET_FNAME)
+    stor_exp_data_path = os.path.join(lib_data_path, env.EXP_STOR_DB_FNAME)
+    stor_pair_path = os.path.join(lib_data_path, env.STORE_PAIR_FNAME)
+    exp_path = os.path.join(lib_data_path, env.EXP_FNAME)
+    notes_path = os.path.join(lib_data_path, env.NOTES_FNAME)
 
     json_paths = [budg_path,
                   stor_exp_data_path,
                   stor_pair_path,
-                  exp_path]
+                  exp_path,
+                  notes_path]
 
     initialize_dirs(list_of_dirs)
     initialize_dbs(json_paths)
@@ -376,11 +405,11 @@ if __name__=="__main__":
                 
                 elif user_in == 'e':
                     backup_data([db_data_path, lib_data_path], backup_folderpath)
-                    edit_money_data(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path, db_inc_data_fpaths, exp_recbin_path, inc_recbin_path)
+                    edit_money_data(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path, db_inc_data_fpaths, exp_recbin_path, inc_recbin_path,  notes_path)
                 elif user_in == 'v':
                     get_income(db_inc_data_fpaths)
                     get_expenses(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path)
-                    view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path)
+                    view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, notes_path)
             else:
                 print(f"No data found. Please place files in {ndata_path} so I can eat.")
 
