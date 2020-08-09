@@ -8,11 +8,67 @@ import data_help
 import env
 import expManager
 
-def store_editor(exp_db_data_filepaths, stor_pair_path, exp_stor_data_path, budg_path, exp_path):
+def notes_editor(db_exp_data_fpaths, db_inc_data_fpaths, notes_path):
+    """
+    Main menu for editing notes
+    """
+    done = False
+    while not done:
+        exp_df = data_help.load_csvs(db_exp_data_fpaths, dtype=env.expdf_types, parse_dates=env.pdates_colname)
+        inc_df = data_help.load_csvs(db_inc_data_fpaths, dtype=env.INC_dtypes, parse_dates=env.pdates_colname)
+        notes_dict = data_help.read_jsonFile(notes_path)
+
+        exp_months = data_help.extract_months(exp_df[env.DATE], start=False)
+        inc_months = data_help.extract_months(inc_df[env.DATE], start=False)
+        months_in_data = util.add_set_to_set(exp_months, inc_months, sort=True)
+        
+        if notes_dict == {}:
+            prompt = "You have not entered any notes yet. Which month(s) would you like to add notes for? Type 'q' to quit: "
+            edit_prompt_base = "Please enter your note below for month "
+
+        else:
+            prompt = "Please select a month to edit (q) to quit: "
+            edit_prompt_base = "Edit your note below for month "
+        
+        sel_months = util.select_indices_of_list(prompt, list_to_compare_to=months_in_data, return_matches=True, abortable=True, abortchar='q')
+        
+        if sel_months is not None:
+            notes = edit_notes(edit_prompt_base, notes_dict, sel_months, notes_path)
+            
+        else:
+            done = True
+            
+        
+def edit_notes(prompt, notes, months, notes_path):
+    """
+    Editing notes method
+    params:
+        prompt: Output prompt to user
+        notes - the notes object
+        notes_path - the path to the notes object
+        months - the months given for editing or adding notes to
+        notes_path - path to notes file
+    """
+    for month in months:
+        if month in notes.keys():
+            editable = notes[month]
+        else:
+            editable = ""
+        note = util.get_editable_input(prompt + f"[{month}], or ctrl-c to quit process. " + "Tip: use (\\n) to denote new lines for plotting: ", editable=editable)
+        if note is not None: # note is None type upon quit
+            notes[month] = note
+            data_help.write_to_jsonFile(notes_path, notes)
+        else:
+            return None
+        
+    return notes
+
+
+def store_editor(db_exp_data_fpaths, stor_pair_path, exp_stor_data_path, budg_path, exp_path):
     """
     Edits a store's name across all databases.
     params:
-        exp_db_data_filepaths - filepaths to expense csv's
+        db_exp_data_fpaths - filepaths to expense csv's
         stor_pair_path - filepath to store name database
         exp_stor_data_path - filepath to store-expense data base
         budg_path - filepath to budget database
@@ -20,7 +76,7 @@ def store_editor(exp_db_data_filepaths, stor_pair_path, exp_stor_data_path, budg
     
     done = False
     while not done:
-        df = data_help.load_csvs(exp_db_data_filepaths, dtype=env.SB_dtypes, parse_dates=env.SB_parse_dates)
+        df = data_help.load_csvs(db_exp_data_fpaths, dtype=env.expdf_types, parse_dates=env.pdates_colname)
         stor_data = data_help.read_jsonFile(stor_pair_path)
         exp_stor_data = data_help.read_jsonFile(exp_stor_data_path)
         exp_data = data_help.read_jsonFile(exp_path)
@@ -30,20 +86,20 @@ def store_editor(exp_db_data_filepaths, stor_pair_path, exp_stor_data_path, budg
         user_in = util.get_user_input_for_chars(prompt, ['a', 'b', 'q'])
 
         if user_in == 'a':
-            change_storename(exp_db_data_filepaths, df, exp_stor_data, stor_data, stor_pair_path, exp_stor_data_path)
+            change_storename(db_exp_data_fpaths, df, exp_stor_data, stor_data, stor_pair_path, exp_stor_data_path)
         elif user_in == 'b':
-            change_storepair(exp_db_data_filepaths, df, exp_stor_data, stor_data, stor_pair_path, exp_stor_data_path, exp_data, budg_db)
+            change_storepair(db_exp_data_fpaths, df, exp_stor_data, stor_data, stor_pair_path, exp_stor_data_path, exp_data, budg_db)
         elif user_in == 'q':
             done = True
     return
 
-def change_storename(exp_db_data_filepaths, df, exp_stor_data, stor_data, stor_pair_path, exp_stor_data_path):
+def change_storename(db_exp_data_fpaths, df, exp_stor_data, stor_data, stor_pair_path, exp_stor_data_path):
     storename = util.select_dict_key_using_integer(exp_stor_data, 'Please select a storename to change, (q) to quit: ', print_children=False, quit_str='q')
     if storename != None: # select_dict_key_using_integer returns none if quitstr is given
         new_name = util.prompt_with_warning("Please enter your new storename: ", ret_lowercase=True)
         if new_name != None: # none is returned from prompt_with_warning when user wants to abort.
             print(f"--- Editing {env.OUT_EXP_DATA_TEMPL} --- ")
-            edit_df_entries(df, exp_db_data_filepaths[0], env.FILT_STORENAME, storename, new_name)
+            edit_df_entries(df, db_exp_data_fpaths[0], env.FILT_STORENAME, storename, new_name)
             print(f"--- Editing {env.STORE_PAIR_FNAME} --- ")
             stor_data = data_help.match_mod_dict_vals(stor_data, storename, new_name)
             data_help.write_to_jsonFile(stor_pair_path, stor_data)
@@ -51,7 +107,7 @@ def change_storename(exp_db_data_filepaths, df, exp_stor_data, stor_data, stor_p
             exp_stor_data = data_help.modify_dict_key(exp_stor_data, storename, new_name)
             data_help.write_to_jsonFile(exp_stor_data_path, exp_stor_data)
 
-def change_storepair(exp_db_data_filepaths, df, exp_stor_data, stor_data, stor_pair_path, exp_stor_data_path, exp_data, budg_db):
+def change_storepair(db_exp_data_fpaths, df, exp_stor_data, stor_data, stor_pair_path, exp_stor_data_path, exp_data, budg_db):
     """
     Allows user to change the pairing setup within stor_data, opting for the creation of a new store, or the repairing to a different store name
     """
@@ -88,19 +144,19 @@ def change_storepair(exp_db_data_filepaths, df, exp_stor_data, stor_data, stor_p
                     df.at[idx, env.FILT_STORENAME] = storename
                     df.at[idx, env.EXPENSE] = selected_exp  
         
-                data_help.write_data(df, exp_db_data_filepaths[0])
+                data_help.write_data(df, db_exp_data_fpaths[0])
             
             data_help.write_to_jsonFile(stor_pair_path, stor_data) 
             util.print_fulldf(df)
             
-def expenses_editor(exp_db_data_filepaths, stor_pair_path, exp_stor_data_path, budg_path, exp_path):
+def expenses_editor(db_exp_data_fpaths, stor_pair_path, exp_stor_data_path, budg_path, exp_path):
     """
     Edits an expense's name across all databases
     """
     done = False
     while not done:
         exp_data = data_help.read_jsonFile(exp_path)
-        df = data_help.load_csvs(exp_db_data_filepaths, dtype=env.SB_dtypes, parse_dates=env.SB_parse_dates)
+        df = data_help.load_csvs(db_exp_data_fpaths, dtype=env.expdf_types, parse_dates=env.pdates_colname)
         stor_data = data_help.read_jsonFile(stor_pair_path)
         exp_stor_data = data_help.read_jsonFile(exp_stor_data_path)
         budg_data = data_help.read_jsonFile(budg_path)
@@ -112,18 +168,18 @@ def expenses_editor(exp_db_data_filepaths, stor_pair_path, exp_stor_data_path, b
         if user_in == 'a':
             add_expense(exp_data, exp_stor_data, exp_path, exp_stor_data_path)
         elif user_in == 'b': # TODO
-            edit_expense_name(exp_db_data_filepaths[0], df, exp_data, budg_data, exp_stor_data, exp_path, budg_path, exp_stor_data_path)
+            edit_expense_name(db_exp_data_fpaths[0], df, exp_data, budg_data, exp_stor_data, exp_path, budg_path, exp_stor_data_path)
         elif user_in == 'c':
             pair_prompt = "Enter the expenses you want to add to store, separated by a space.. (q) to abort: "
             expenses = util.select_indices_of_list(pair_prompt, exp_data[env.EXPENSE_DATA_KEY], return_matches=True, abortable=True, abortchar='q')
             if expenses != None:
                 add_expenses_to_store(exp_stor_data, exp_stor_data_path, expenses)
         elif user_in == 'd':
-            remove_expense_from_dbs(exp_db_data_filepaths[0], exp_stor_data, exp_data, budg_data, df, exp_stor_data_path, budg_path, exp_path)
+            remove_expense_from_dbs(db_exp_data_fpaths[0], exp_stor_data, exp_data, budg_data, df, exp_stor_data_path, budg_path, exp_path)
         elif user_in == 'e':
-            edit_cell_in_dfcol(exp_db_data_filepaths[0], df, col_name=env.EXPENSE, opt_col=env.FILT_STORENAME, opt_dict=exp_stor_data)
+            edit_cell_in_dfcol(db_exp_data_fpaths[0], df, col_name=env.EXPENSE, opt_col=env.FILT_STORENAME, opt_dict=exp_stor_data)
         elif user_in == 'f':
-            remove_exp_from_store(exp_db_data_filepaths[0], df, exp_stor_data, exp_stor_data_path)
+            remove_exp_from_store(db_exp_data_fpaths[0], df, exp_stor_data, exp_stor_data_path)
         elif user_in == 'q':
             done = True
         elif user_in == 's':
@@ -351,16 +407,16 @@ def df_editor(df_to_move_from_path, df_to_move_to_path = None, restorable=False,
     """
     done = False
     while not done:
-        df_to_move_from = data_help.load_csv(df_to_move_from_path, dtype=env.SB_dtypes, parse_dates=env.SB_parse_dates)
+        df_to_move_from = data_help.load_csv(df_to_move_from_path, dtype=env.expdf_types, parse_dates=env.pdates_colname)
         
         if df_to_move_to_path is not None:
-            df_to_move_to = data_help.load_csv(df_to_move_to_path, dtype=env.SB_dtypes, parse_dates=env.SB_parse_dates)
+            df_to_move_to = data_help.load_csv(df_to_move_to_path, dtype=env.expdf_types, parse_dates=env.pdates_colname)
         
         if df_with_reductions_path is not None:
-            df_with_reductions = data_help.load_csv(df_with_reductions_path, dtype=env.SB_dtypes, parse_dates=env.SB_parse_dates)
+            df_with_reductions = data_help.load_csv(df_with_reductions_path, dtype=env.expdf_types, parse_dates=env.pdates_colname)
 
         if df_to_move_reduction_to_path is not None:
-            df_to_move_reduction_to = data_help.load_csv(df_to_move_reduction_to_path, dtype=env.SB_dtypes, parse_dates=env.SB_parse_dates)
+            df_to_move_reduction_to = data_help.load_csv(df_to_move_reduction_to_path, dtype=env.expdf_types, parse_dates=env.pdates_colname)
         
         if restorable == False:
             prompt = "Would you like to: \n(a) - move transactions to the recycle bin\n(b) - adjust a transaction price manually\n"

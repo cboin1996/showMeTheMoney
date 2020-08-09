@@ -200,7 +200,7 @@ def read_jsonFile_ifchanged(fp, obj1, obj2):
 
 def extract_months(date_col, start=True):
     """
-    Given a pandas series of dates, returns only the first day of the months present in that list
+    Given a pandas series of dates, returns only the first day of the months present in that list as a set
     """
     date_col.drop_duplicates(inplace=True)
     date_list = []

@@ -2,6 +2,7 @@ import datetime
 import pandas as pd
 import re 
 import calendar
+import pyautogui
 
 import expManager
 def get_current_month():
@@ -306,5 +307,37 @@ def print_fulldf(df):
         print(" --- --- --- --- --- ")
         print(df)
         print(" --- --- --- --- --- ")
+
+def add_set_to_set(orig_set, set_to_add, sort=False):
+    """
+    Adds a sets items to a set
+    params:
+        orig_set : set to add to
+        set_to_add : the set to add them items from
+        sorted : if true, converts set to list and orders
+    """
+    for item in set_to_add:
+        orig_set.add(item)
+    
+    if sort == True:
+        orig_set = sorted(list(orig_set))
+
+
+    return orig_set
+
+def get_editable_input(prompt, editable):
+    """
+    Allows user to edit a string 'editable' during input
+    returns: user input
+    """
+    try:
+        print(prompt)
+        pyautogui.typewrite(editable)
+        user_in = input()
+    except KeyboardInterrupt:
+        print("Aborting process. ")
+        return None
+
+    return user_in
 if __name__=="__main__":
     format_input_to_list("Input words seped by spaces: ")
