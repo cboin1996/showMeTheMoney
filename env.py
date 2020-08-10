@@ -70,6 +70,7 @@ NOTES_FNAME = 'monthly_notes.json'
 
 EXPENSE_DATA_KEY = 'expense'
 BUDGET_TOTAL_KEY = 'total'
+EXPENSES_SUBTRACTED_KEY = "subtract"
 """
 IGNORABLE_TRANSACTIONS:
 DEBIT

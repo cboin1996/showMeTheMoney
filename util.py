@@ -3,6 +3,7 @@ import pandas as pd
 import re 
 import calendar
 import pyautogui
+import data_help
 
 import expManager
 def get_current_month():
@@ -339,5 +340,20 @@ def get_editable_input(prompt, editable):
         return None
 
     return user_in
+
+def edit_list_in_dict(prompt, options, dct, key, dct_path, add=True):
+    items = select_indices_of_list(prompt, list_to_compare_to=options, return_matches=True, abortable=True, abortchar='q')
+    if items is not None:
+        if add == True:
+            for item in items:
+                dct[key].append(item)
+        else:
+            for item in items:
+                dct[key].remove(item)
+
+        data_help.write_to_jsonFile(dct_path, dct)
+    else:
+        return None
+
 if __name__=="__main__":
     format_input_to_list("Input words seped by spaces: ")
