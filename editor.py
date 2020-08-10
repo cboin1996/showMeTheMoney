@@ -161,9 +161,18 @@ def expenses_editor(db_exp_data_fpaths, stor_pair_path, exp_stor_data_path, budg
         exp_stor_data = data_help.read_jsonFile(exp_stor_data_path)
         budg_data = data_help.read_jsonFile(budg_path)
 
-        prompt_pt1 = "Would you like to:\n(a) - add an expense\n(b) - edit an expenses name\n(c) - pair expenses to stores\n"
-        prompt_pt2 = "(d) - delete an expense **CAUTION**\n(e) - edit an expense within your database\n(f) - unpair an expense from stores\n(q) - quit editor\ntype here: "
-        user_in = util.get_user_input_for_chars(prompt_pt1+prompt_pt2, ['a', 'b', 'c', 'd', 'e', 'f', 'q', 's'])
+        prompt = "\n".join(("Would you like to:", 
+                            "(a) - add an expense", 
+                            "(b) - edit an expenses name", 
+                            "(c) - pair expenses to stores", 
+                            "(d) - delete an expense **CAUTION**", 
+                            "(e) - edit an expense within your database", 
+                            "(f) - unpair an expense from stores", 
+                            "(g) - add expense to be subtracted in plot title",
+                            "(h) - remove expense to be subtracted in plot title",
+                            "(q) - quit editor", 
+                            "type here: "))
+        user_in = util.get_user_input_for_chars(prompt, ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'q', 's'])
 
         if user_in == 'a':
             add_expense(exp_data, exp_stor_data, exp_path, exp_stor_data_path)
@@ -180,6 +189,12 @@ def expenses_editor(db_exp_data_fpaths, stor_pair_path, exp_stor_data_path, budg
             edit_cell_in_dfcol(db_exp_data_fpaths[0], df, col_name=env.EXPENSE, opt_col=env.FILT_STORENAME, opt_dict=exp_stor_data)
         elif user_in == 'f':
             remove_exp_from_store(db_exp_data_fpaths[0], df, exp_stor_data, exp_stor_data_path)
+        elif user_in =='g':
+            prompt = "Which expense(s) would you like to be subtracted in the title to your plots? "
+            util.edit_list_in_dict(prompt, exp_data[env.EXPENSE_DATA_KEY], exp_data, env.EXPENSES_SUBTRACTED_KEY, exp_path, add=True)
+        elif user_in == 'h':
+            prompt = "Which expense(s) would you like to remove? "
+            util.edit_list_in_dict(prompt, exp_data[env.EXPENSES_SUBTRACTED_KEY], exp_data, env.EXPENSES_SUBTRACTED_KEY, exp_path, add=False) 
         elif user_in == 'q':
             done = True
         elif user_in == 's':
