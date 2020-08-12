@@ -158,9 +158,6 @@ def get_expenses_for_rows(df, stor_exp_data_path, stor_data_path, budg_path):
     except KeyboardInterrupt:
         print("\n\nQuitting to main menu. Your data inputs will be saved, and you can resume where you left off by restarting and selecting 'v' for view data!\n")
     
-    print("\nFinished gathering your expense data: \n")
-    util.print_fulldf(df)
-    print("")
     return df
     
 def search_store_relationships(storename, exp_stor_db, budg_db, stor_exp_data_path, stor_db, stor_data_path):

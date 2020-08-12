@@ -7,6 +7,7 @@ import shutil
 import env
 import util
 import re
+import uuid
 
 def print_file(file_path):
     """
@@ -245,22 +246,29 @@ def match_mod_dict_vals(dct:dict, old_val:str, new_val:str):
     return dct
 
 
-def locate_and_move_data_between_dfs(df_to_move_from, rows, df_to_accept):
+def locate_and_move_data_between_dfs(df_to_move_from, rows, df_to_accept, col_to_erase=None):
     """
     Select rows from df_to_move_from to df_to_accept
     """
     df_to_move = df_to_move_from.loc[rows]
     df_to_move_from.drop(rows, inplace=True)
+    if col_to_erase is not None:
+        df_to_move[col_to_erase] = ""
     print(f"Moving below df.\n{df_to_move}\n")
     df_to_accept = pd.concat([df_to_move, df_to_accept])
 
     return df_to_move_from, df_to_accept
 
-def check_for_match_in_rows(rows, df, df_col_with_val, df_to_check, df_to_check_col, df_to_check_path):
-
+def check_for_match_in_rows(rows, df, df_col_with_val, df_to_check, df_to_check_idcol, df_to_check_path, df_to_check_col_with_val):
+    """
+    params:
+        rows: rows of the df
+        df - the dataframe to get ids from to check for matches in df_to_check
+    """
     for row in rows:
         val = df.at[row, df_col_with_val]
-        matches = df_to_check.loc[df_to_check[df_to_check_col] == val]
+        cross_check_id = df.at[row, df_to_check_idcol] # check column for unique id
+        matches = df_to_check.loc[df_to_check[df_to_check_idcol] == cross_check_id] # check if unique id exists in other df
 
         if matches.empty: # catch if empty is returned
             print("No matches found when restoring. ")
@@ -271,7 +279,7 @@ def check_for_match_in_rows(rows, df, df_col_with_val, df_to_check, df_to_check_
             match_idx_lst = matches.index.tolist()
             idx = util.select_from_list(match_idx_lst, prompt, abortchar='a', ret_match=False, print_lst=False, check_contents=True)
             if idx is not None: 
-                df_to_check.at[idx, df_to_check_col] = round(df_to_check.at[idx, df_to_check_col] - val, 2)
+                df_to_check.at[idx, df_to_check_col_with_val] = round(df_to_check.at[idx, df_to_check_col_with_val] - val, 2)
                 write_data(df_to_check, df_to_check_path) # write data out.
             else: # none type indicates restore anyways
                 return None
@@ -292,4 +300,15 @@ def combine_and_drop(df, col1, col2, operation : str):
         df[col1] = df[col1] + df[col2]
     df.drop(columns=[col2], inplace=True)
 
+    return df
+
+def iterate_df_and_add_uuid_to_col(df, col):
+    """
+    Adds a unique UUID to pandas col for each item. 
+    """
+    for idx, row in df.iterrows():
+        if pd.isnull(row[col]):
+            uuid_val = uuid.uuid4()
+            df.at[idx, col] = uuid_val
+    
     return df

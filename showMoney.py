@@ -75,9 +75,9 @@ def check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adat
     if len(ndata_filepaths) != 0 and len(db_exp_data_fpaths) != 0 and len(db_inc_data_fpaths) != 0:
         df_new = data_help.load_and_process_csvs(file_paths=ndata_filepaths, strip_cols=[env.TYPE, env.BANK_STORENAME])
         df_inc_new, df_exp_new = data_help.filter_by_amnt(df_new, col_name=env.AMOUNT)
-        df_inc_new = data_help.add_columns(df_inc_new, [env.ADJUSTMENT])
+        df_inc_new = data_help.add_columns(df_inc_new, [env.ADJUSTMENT, env.INC_UUID, env.EXP_UUID])
 
-        df_exp_new = data_help.add_columns(df_exp_new, [env.FILT_STORENAME, env.EXPENSE, env.ADJUSTMENT])
+        df_exp_new = data_help.add_columns(df_exp_new, [env.FILT_STORENAME, env.EXPENSE, env.ADJUSTMENT, env.EXP_UUID, env.INC_UUID])
 
         df_exp = data_help.load_csvs(file_paths=db_exp_data_fpaths, strip_cols=[env.TYPE, env.BANK_STORENAME])
         df_inc = data_help.load_csvs(file_paths=db_inc_data_fpaths, strip_cols=[env.TYPE, env.BANK_STORENAME])
@@ -88,9 +88,9 @@ def check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adat
     elif len(ndata_filepaths) != 0:
         df_new = data_help.load_and_process_csvs(file_paths=ndata_filepaths, strip_cols=[env.TYPE, env.BANK_STORENAME])
         df_inc, df_exp = data_help.filter_by_amnt(df_new, col_name=env.AMOUNT)
-        df_inc_new = data_help.add_columns(df_inc_new, [env.ADJUSTMENT])
+        df_inc_new = data_help.add_columns(df_inc_new, [env.ADJUSTMENT, env.INC_UUID, env.EXP_UUID])
 
-        df_exp_new = data_help.add_columns(df_exp_new, [env.FILT_STORENAME, env.EXPENSE, env.ADJUSTMENT])
+        df_exp_new = data_help.add_columns(df_exp_new, [env.FILT_STORENAME, env.EXPENSE, env.ADJUSTMENT, env.EXP_UUID, env.INC_UUID])
 
     else:
         return False
@@ -103,9 +103,11 @@ def check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adat
     df_inc = data_help.drop_dups(df=df_inc, col_names=env.CHECK_FOR_DUPLICATES_COL_NAMES, ignore_index=True, strip_col=env.TYPE)
 
     df_exp = data_help.remove_subframe(df_to_remove_from=df_exp, df_to_remove=df_exp_recbin, col_names=env.CHECK_FOR_DUPLICATES_COL_NAMES)
-    df_inc = data_help.remove_subframe(df_to_remove_from=df_inc, df_to_remove=df_inc_recbin, col_names=env.SB_INC_COLNAMES)
+    df_inc = data_help.remove_subframe(df_to_remove_from=df_inc, df_to_remove=df_inc_recbin, col_names=env.CHECK_FOR_DUPLICATES_COL_NAMES)
 
     print(f"INCOME\n\n{df_inc}\n\nEXPENSES\n\n{df_exp}\n")
+    df_exp = data_help.iterate_df_and_add_uuid_to_col(df_exp, env.EXP_UUID)
+    df_inc = data_help.iterate_df_and_add_uuid_to_col(df_inc, env.INC_UUID)
 
     data_help.write_data(df_exp, os.path.join(db_exp_data_path, env.OUT_EXP_DATA_TEMPL), sortby=env.DATE, fillna_col=[env.ADJUSTMENT])
     data_help.write_data(df_inc, os.path.join(db_inc_data_path, env.OUT_INC_DATA_TEMPL), sortby=env.DATE, fillna_col=[env.ADJUSTMENT])
@@ -155,7 +157,7 @@ def edit_money_data(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg
             print("Exited editor.")
             done = True
 
-def get_expenses(db_exp_data_fpaths: list, db_inc_data_fpaths: list, stor_pair_path: str, stor_exp_data_path : str, budg_path: str, exp_path: str):
+def get_expenses(db_exp_data_fpaths: list, db_inc_data_fpaths: list, stor_pair_path: str, stor_exp_data_path : str, budg_path: str, exp_path: str, dont_print_cols = None):
     """
     main method for the importing of expense data
     """
@@ -165,9 +167,11 @@ def get_expenses(db_exp_data_fpaths: list, db_inc_data_fpaths: list, stor_pair_p
     dates = data_help.extract_months(exp_df[env.DATE], start=False)
     expManager.get_budgets(budg_path, exp_path, dates) # check for any missing budgets either this month or any month in the data
     exp_df = expManager.get_expenses_for_rows(exp_df, stor_exp_data_path, stor_pair_path, budg_path)
+    print("\nFinished gathering your expense data: \n")
+    util.print_fulldf(exp_df, dont_print_cols)
     data_help.write_data(exp_df, db_exp_data_fpaths[0])
 
-def get_income(db_inc_data_fpaths: list):
+def get_income(db_inc_data_fpaths: list, dont_print_cols = None):
     """
     main method for the importing of income data
     """
@@ -176,13 +180,14 @@ def get_income(db_inc_data_fpaths: list):
                                           "\nRemoving the below income transactions as they are either an internal bank acct transfer, cash advance or credit payment.")
     data_help.write_data(inc_df, db_inc_data_fpaths[0])
     print("\nFinished gathering your income data: \n")
-    util.print_fulldf(inc_df)
+    util.print_fulldf(inc_df, dont_print_cols)
 
-def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, notes_path, exp_path):
+def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, notes_path, exp_path, dont_print_cols=None):
     """
     main method for the viewing of data
     params:
         exp_path - path to expenses.json
+        dont_print_cols - ignore columns for output to CLI
     """
     df_exp = data_help.load_csvs(db_exp_data_fpaths, dtype=env.expdf_types, parse_dates=env.pdates_colname, index=env.DATE)
     df_inc = data_help.load_csvs(db_inc_data_fpaths, dtype=env.INC_dtypes, parse_dates=env.pdates_colname, index=env.DATE) # TODO SHOW NET INCOME ON PLOTS
@@ -207,7 +212,7 @@ def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor
         for year in years_to_show:
             df_inc = df_inc[year] # filter for the year
             print("\nAll Income this year. ")
-            util.print_fulldf(df_inc)
+            util.print_fulldf(df_inc, dont_print_cols=dont_print_cols)
             print("Income grouped by month and store")
             df_inc_per_month = df_inc.groupby([pd.Grouper(freq='M'), env.BANK_STORENAME]).sum()
             util.print_fulldf(df_inc_per_month)
@@ -216,8 +221,8 @@ def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor
             df_budg = df_budg.stack().apply(pd.Series).rename(columns={0:env.BUDGET}) # collapse data into multindex frame
 
             df_exp = df_exp[year]
-            print("All transactions this year.")
-            util.print_fulldf(df_exp)
+            print("All expense transactions this year.")
+            util.print_fulldf(df_exp, dont_print_cols=dont_print_cols)
 
             print("Totals by store grouped per month.")
             df_exp_stor_per_month = df_exp.groupby([pd.Grouper(freq="M"), env.EXPENSE, env.FILT_STORENAME]).sum()
@@ -433,7 +438,7 @@ if __name__=="__main__":
                 elif user_in == 'v':
                     get_income(db_inc_data_fpaths)
                     get_expenses(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, exp_path)
-                    view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, notes_path, exp_path)
+                    view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, notes_path, exp_path, dont_print_cols=[env.INC_UUID, env.EXP_UUID])
             else:
                 print(f"No data found. Please place files in {ndata_path} so I can eat.")
 

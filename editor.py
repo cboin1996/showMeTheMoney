@@ -399,18 +399,18 @@ def df_editor_menu(db_inc_data_fpaths, inc_recbin_path, db_exp_data_fpaths, exp_
         df_user_in = util.get_user_input_for_chars(prompt, ['a', 'b', 'c', 'd', 'q'])
         if df_user_in == 'a':
             df_editor(db_inc_data_fpaths[0], df_to_move_to_path=inc_recbin_path, 
-                      df_with_reductions_path=db_exp_data_fpaths[0], df_to_move_reduction_to_path=exp_recbin_path)
+                      df_with_reductions_path=db_exp_data_fpaths[0], df_to_move_reduction_to_path=exp_recbin_path, uuid_col=env.INC_UUID, df_reduct_uuid_col=env.EXP_UUID)
         elif df_user_in == 'b':
             df_editor(db_exp_data_fpaths[0], df_to_move_to_path=exp_recbin_path, 
-                      df_with_reductions_path=db_inc_data_fpaths[0], df_to_move_reduction_to_path=inc_recbin_path)
+                      df_with_reductions_path=db_inc_data_fpaths[0], df_to_move_reduction_to_path=inc_recbin_path, uuid_col=env.EXP_UUID, df_reduct_uuid_col=env.INC_UUID)
         elif df_user_in == 'c':
-            df_editor(inc_recbin_path, df_to_move_to_path=db_inc_data_fpaths[0], restorable=True, df_with_reductions_path=db_exp_data_fpaths[0]) # function takes list of csvs as input
+            df_editor(inc_recbin_path, df_to_move_to_path=db_inc_data_fpaths[0], restorable=True, df_with_reductions_path=db_exp_data_fpaths[0], df_reduct_uuid_col=env.EXP_UUID) # function takes list of csvs as input
         elif df_user_in == 'd':
-            df_editor(exp_recbin_path, df_to_move_to_path=db_exp_data_fpaths[0], restorable=True, df_with_reductions_path=db_inc_data_fpaths[0]) 
+            df_editor(exp_recbin_path, df_to_move_to_path=db_exp_data_fpaths[0], restorable=True, df_with_reductions_path=db_inc_data_fpaths[0], df_reduct_uuid_col=env.INC_UUID) 
         elif df_user_in == 'q':
             done = True
 
-def df_editor(df_to_move_from_path, df_to_move_to_path = None, restorable=False, recycle=True, df_with_reductions_path=None,  df_to_move_reduction_to_path=None):
+def df_editor(df_to_move_from_path, df_to_move_to_path = None, restorable=False, recycle=True, df_with_reductions_path=None,  df_to_move_reduction_to_path=None, uuid_col=None, df_reduct_uuid_col=None):
     """
     Allows the editing of a dataframe
     params:
@@ -454,7 +454,7 @@ def df_editor(df_to_move_from_path, df_to_move_to_path = None, restorable=False,
 
         elif user_in == 'b' and restorable == True:
             df_swap("Which row or rows would you like to restore (q) to abort? ", df_to_move_from, df_to_move_to, 
-                    df_to_move_from_path, df_to_move_to_path, cross_check_df=df_with_reductions, cross_check_col=env.ADJUSTMENT, cross_check_df_path=df_with_reductions_path)
+                    df_to_move_from_path, df_to_move_to_path, cross_check_df=df_with_reductions, cross_check_col=df_reduct_uuid_col, cross_check_df_path=df_with_reductions_path)
         
         elif user_in == 'b' and restorable == False:
             edit_cell_in_dfcol(df_to_move_from_path, df_to_move_from, col_name=env.ADJUSTMENT, col_type='float')
@@ -462,12 +462,13 @@ def df_editor(df_to_move_from_path, df_to_move_to_path = None, restorable=False,
         elif user_in =='c' and restorable == False:
             edit_df_transaction_price(df_to_edit=df_to_move_from, df_to_edit_path=df_to_move_from_path, col_to_use=env.ADJUSTMENT, df_to_move_reduction_to=df_to_move_reduction_to, 
                                       df_to_move_reduction_to_path=df_to_move_reduction_to_path, df_with_reductions=df_with_reductions, df_with_reductions_path=df_with_reductions_path,
-                                      reduction_col=env.AMOUNT)
+                                      reduction_col=env.AMOUNT, uuid_col=uuid_col, df_reduct_uuid_col=df_reduct_uuid_col)
   
         elif user_in == 'q':
             done = True
 
-def edit_df_transaction_price(df_to_edit, df_to_edit_path, col_to_use, df_to_move_reduction_to, df_to_move_reduction_to_path, df_with_reductions, df_with_reductions_path, reduction_col):
+def edit_df_transaction_price(df_to_edit, df_to_edit_path, col_to_use, df_to_move_reduction_to, df_to_move_reduction_to_path, 
+                              df_with_reductions, df_with_reductions_path, reduction_col, uuid_col=None, df_reduct_uuid_col=None):
     """
     params:
         df_to_edit - the dataframe to edit the price on
@@ -485,14 +486,18 @@ def edit_df_transaction_price(df_to_edit, df_to_edit_path, col_to_use, df_to_mov
             reductions_index_list = df_with_reductions.index.tolist()
             util.print_fulldf(df_with_reductions)
             prompt = f"Which index contains the transaction you want? (q) to quit: "
-            reduction_index = util.select_from_list(reductions_index_list, prompt, abortchar='q', ret_match=False, print_lst=False)
-            if reduction_index is not None: # none type aborts
-                val = df_with_reductions.at[reduction_index,reduction_col]
-                if df_to_edit.at[index, col_to_use] == np.nan: # check for nan value
-                    df_to_edit.at[index, col_to_use] = 0.0
-                df_to_edit.at[index, col_to_use] = df_to_edit.at[index, col_to_use] + val
+            reduction_indices = util.select_indices_of_list(prompt, reductions_index_list, abortchar='q', return_matches=False, print_lst=False)
+            if reduction_indices is not None: # none type aborts
+                for reduction_index in reduction_indices:
+                    val = df_with_reductions.at[reduction_index,reduction_col] # get transaction val
+
+                    if df_to_edit.at[index, col_to_use] == np.nan: # check for nan value
+                        df_to_edit.at[index, col_to_use] = 0.0
+
+                    df_with_reductions.at[reduction_index, uuid_col] = df_to_edit.at[index, uuid_col]
+                    df_to_edit.at[index, col_to_use] = df_to_edit.at[index, col_to_use] + val
                 df_swap(df_to_move_from=df_with_reductions, df_to_move_to=df_to_move_reduction_to, df_to_move_from_path=df_with_reductions_path,
-                        df_to_move_to_path=df_to_move_reduction_to_path, rows=[reduction_index]) # writes changes
+                    df_to_move_to_path=df_to_move_reduction_to_path, rows=reduction_indices) # writes changes
             else:
                 break
         
@@ -517,9 +522,12 @@ def df_swap(prompt=None, df_to_move_from=None, df_to_move_to=None, df_to_move_fr
         rows = util.select_indices_of_list(prompt, list(df_to_move_from.index), abortable=True, abortchar='q', print_lst=False)
     if rows is not None: # above returns none if user aborts
         if cross_check_df is not None:
-            data_help.check_for_match_in_rows(rows, df_to_move_from, env.AMOUNT, cross_check_df, cross_check_col, cross_check_df_path)
+            data_help.check_for_match_in_rows(rows, df_to_move_from, env.AMOUNT, cross_check_df, cross_check_col, 
+                                              cross_check_df_path, env.ADJUSTMENT)
 
-        df_to_move_from, df_to_move_to = data_help.locate_and_move_data_between_dfs(df_to_move_from, rows, df_to_move_to)
+
+        df_to_move_from, df_to_move_to = data_help.locate_and_move_data_between_dfs(df_to_move_from, rows, 
+                                                                                    df_to_move_to, cross_check_col)
         data_help.write_data(df_to_move_to, df_to_move_to_path, sortby=env.DATE)
         data_help.write_data(df_to_move_from, df_to_move_from_path, sortby=env.DATE)
 
