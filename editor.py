@@ -302,7 +302,7 @@ def edit_cell_in_dfcol(db_data_filepath : str, df, col_name, opt_col=None, opt_d
             
             else:
                 if col_type == 'float':
-                    val = util.get_float_input(f"Please input ({col_type}) for this entry: ", force_pos=False, roundto=2)
+                    val = util.get_float_input(f"Please input ({col_type}) for this entry at row [{index}] col [{col_name}]: ", force_pos=False, roundto=2)
 
             
             if val != None: # nonetype aborts
