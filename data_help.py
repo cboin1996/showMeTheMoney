@@ -60,14 +60,17 @@ def load_and_process_csvs(file_paths, strip_cols=None, data_type=None):
             df.columns = env.SB_BASE_CREDIT_COLNAMES
             # add type column to credit data to match debit data frame
             df[env.TYPE] = np.nan
+        
+        elif data_type == env.SCOTIABANK and len(df.columns) == 5:
+            df.columns = env.SB_BASE_DEBIT_COLNAMES
+            df.drop(columns=[env.NULL], inplace=True)
+            
         elif len(df.columns) == 4 and data_type == env.CIBC:
             df.columns = env.CIBC_BASE_COLNAMES
         elif len(df.columns) == 5 and data_type == env.CIBC:
             df.columns = env.CIBC_CREDIT_COLNAMES
             df.drop(columns=[env.CIBC_CARD_NUM_COL])
-        elif data_type == env.SCOTIABANK:
-            df.columns = env.SB_BASE_DEBIT_COLNAMES
-            df.drop(columns=[env.NULL], inplace=True)
+
 
         dfs_in.append(df)
 
