@@ -143,7 +143,7 @@ def get_budgets(budg_path, exp_path, dates=None):
     return
 
 
-def get_expenses_for_rows(df, stor_exp_data_path, stor_data_path, budg_path, bank_name):
+def get_expenses_for_rows(df, stor_exp_data_path, stor_data_path, budg_path, regex_str):
     """
     Gets the expense data for stores, prompting the user when multiple expenses exist for a store
     params:
@@ -164,11 +164,8 @@ def get_expenses_for_rows(df, stor_exp_data_path, stor_data_path, budg_path, ban
                 month_end_date = util.get_month_from_timestamp(
                     row[env.DATE], start=False)
                 if type(row[env.BANK_STORENAME]) is str:
-                    if bank_name == env.SCOTIABANK:
-                        match = env.RE_EXPR.search(row[env.BANK_STORENAME])
-                    elif bank_name == env.CIBC:
-                        match = env.RE_EXPR_CIBC.search(
-                            row[env.BANK_STORENAME])
+                    match = regex_str.search(row[env.BANK_STORENAME])
+
                     if match:
 
                         processed_text = util.process_text(match.group(0))

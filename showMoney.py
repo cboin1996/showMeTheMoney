@@ -73,7 +73,8 @@ def find_data_paths(ndata_path, adata_path, db_exp_data_path, db_inc_data_path, 
 
 
 def check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adata_path,
-                   db_exp_data_path, db_inc_data_path, exp_recbin_path, inc_recbin_path, bank_path):
+                   db_exp_data_path, db_inc_data_path, exp_recbin_path, inc_recbin_path, 
+                   bank_path, strip_cols, check_for_dups_cols):
     """
     Checks db and new folder for any data. 
     Imports the data into expense and income dataframes
@@ -82,27 +83,21 @@ def check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adat
         return False
 
     bank_sel_json = data_help.read_jsonFile(bank_path)
-    if bank_sel_json[env.BANK_SELECTION_KEY] == env.SCOTIABANK:
-        strip_cols = [env.TYPE, env.BANK_STORENAME]
-        check_for_dups_cols = env.CHECK_FOR_DUPLICATES_COL_NAMES
-    elif bank_sel_json[env.BANK_SELECTION_KEY] == env.CIBC:
-        strip_cols = [env.BANK_STORENAME]
-        check_for_dups_cols = env.CIBC_CHECK_FOR_DUPLICATES_COL_NAMES
+
     if len(ndata_filepaths) != 0 and len(db_exp_data_fpaths) != 0 and len(db_inc_data_fpaths) != 0:
         df_new = data_help.load_and_process_csvs(file_paths=ndata_filepaths, strip_cols=strip_cols,
                                                  data_type=bank_sel_json[env.BANK_SELECTION_KEY])
-        df_inc_new, df_exp_new = data_help.filter_by_amnt(
-            df_new, col_name=env.AMOUNT, col_name2=env.NULL, bank_name=bank_sel_json[env.BANK_SELECTION_KEY])
+        df_inc_new, df_exp_new = data_help.filter_by_amnt(df_new, col_name=env.AMOUNT, col_name2=env.NULL, 
+                                                          bank_name=bank_sel_json[env.BANK_SELECTION_KEY])
         df_inc_new = data_help.add_columns(
             df_inc_new, [env.ADJUSTMENT, env.INC_UUID, env.EXP_UUID])
 
-        df_exp_new = data_help.add_columns(df_exp_new, [
-                                           env.FILT_STORENAME, env.EXPENSE, env.ADJUSTMENT, env.EXP_UUID, env.INC_UUID])
+        df_exp_new = data_help.add_columns(df_exp_new, [env.FILT_STORENAME, env.EXPENSE, 
+                                                        env.ADJUSTMENT, env.EXP_UUID, 
+                                                        env.INC_UUID])
 
-        df_exp = data_help.load_csvs(file_paths=db_exp_data_fpaths, strip_cols=[
-                                     env.TYPE, env.BANK_STORENAME])
-        df_inc = data_help.load_csvs(file_paths=db_inc_data_fpaths, strip_cols=[
-                                     env.TYPE, env.BANK_STORENAME])
+        df_exp = data_help.load_csvs(file_paths=db_exp_data_fpaths, strip_cols=strip_cols)
+        df_inc = data_help.load_csvs(file_paths=db_inc_data_fpaths, strip_cols=strip_cols)
 
         df_exp = pd.concat([df_exp, df_exp_new])
         df_inc = pd.concat([df_inc, df_inc_new])
@@ -112,11 +107,10 @@ def check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adat
                                                  data_type=bank_sel_json[env.BANK_SELECTION_KEY])
         df_inc, df_exp = data_help.filter_by_amnt(
             df_new, col_name=env.AMOUNT, col_name2=env.NULL, bank_name=bank_sel_json[env.BANK_SELECTION_KEY])
-        df_inc_new = data_help.add_columns(
-            df_inc, [env.ADJUSTMENT, env.INC_UUID, env.EXP_UUID])
+        df_inc_new = data_help.add_columns(df_inc, [env.ADJUSTMENT, env.INC_UUID, env.EXP_UUID])
 
-        df_exp_new = data_help.add_columns(df_exp, [
-                                           env.FILT_STORENAME, env.EXPENSE, env.ADJUSTMENT, env.EXP_UUID, env.INC_UUID])
+        df_exp_new = data_help.add_columns(df_exp, [env.FILT_STORENAME, env.EXPENSE, env.ADJUSTMENT, 
+                                                    env.EXP_UUID, env.INC_UUID])
 
     else:
         return False
@@ -199,7 +193,9 @@ def edit_money_data(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg
             done = True
 
 
-def get_expenses(db_exp_data_fpaths: list, db_inc_data_fpaths: list, stor_pair_path: str, stor_exp_data_path: str, budg_path: str, exp_path: str, dont_print_cols=None, bank_path=None):
+def get_expenses(db_exp_data_fpaths: list, db_inc_data_fpaths: list, stor_pair_path: str, 
+                 stor_exp_data_path: str, budg_path: str, exp_path: str, dont_print_cols=None, 
+                 regex_str=None, ignorable_transactions=None):
     """
     main method for the importing of expense data
     """
@@ -208,25 +204,25 @@ def get_expenses(db_exp_data_fpaths: list, db_inc_data_fpaths: list, stor_pair_p
     exp_df = data_help.load_csvs(db_exp_data_fpaths, dtype=env.expdf_types,
                                  parse_dates=env.pdates_colname)  # only using on csv db for now. newest will be last? idk verify later.
 
-    exp_df = data_help.drop_for_substring(exp_df, env.BANK_STORENAME, env.IGNORABLE_TRANSACTIONS,
+    exp_df = data_help.drop_for_substring(exp_df, env.BANK_STORENAME, ignorable_transactions,
                                           "\nRemoving the below expense transactions as they are either an internal bank acct transfer, cash advance or credit payment.")
     dates = data_help.extract_months(exp_df[env.DATE], start=False)
     # check for any missing budgets either this month or any month in the data
     expManager.get_budgets(budg_path, exp_path, dates)
-    exp_df = expManager.get_expenses_for_rows(
-        exp_df, stor_exp_data_path, stor_pair_path, budg_path, bank_name)
+    exp_df = expManager.get_expenses_for_rows(exp_df, stor_exp_data_path, 
+                                              stor_pair_path, budg_path, regex_str)
     print("\nFinished gathering your expense data: \n")
     util.print_fulldf(exp_df, dont_print_cols)
     data_help.write_data(exp_df, db_exp_data_fpaths[0])
 
 
-def get_income(db_inc_data_fpaths: list, dont_print_cols=None):
+def get_income(db_inc_data_fpaths: list, dont_print_cols=None, ignorable_transactions=None):
     """
     main method for the importing of income data
     """
     inc_df = data_help.load_csvs(
         db_inc_data_fpaths, dtype=env.INC_dtypes, parse_dates=env.pdates_colname)
-    inc_df = data_help.drop_for_substring(inc_df, env.BANK_STORENAME, env.IGNORABLE_TRANSACTIONS,
+    inc_df = data_help.drop_for_substring(inc_df, env.BANK_STORENAME, ignorable_transactions,
                                           "\nRemoving the below income transactions as they are either an internal bank acct transfer, cash advance or credit payment.")
     data_help.write_data(inc_df, db_inc_data_fpaths[0])
     print("\nFinished gathering your income data: \n")
@@ -244,11 +240,11 @@ def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor
         db_exp_data_fpaths, dtype=env.expdf_types, parse_dates=env.pdates_colname, index=env.DATE)
     df_inc = data_help.load_csvs(db_inc_data_fpaths, dtype=env.INC_dtypes,
                                  parse_dates=env.pdates_colname, index=env.DATE)  # TODO SHOW NET INCOME ON PLOTS
-    df_exp = data_help.combine_and_drop(
-        df_exp, env.AMOUNT, env.ADJUSTMENT, 'subtract')
+    df_exp = data_help.combine_and_drop(df_exp, env.AMOUNT, env.ADJUSTMENT, 
+                                        'subtract')
 
-    df_inc = data_help.combine_and_drop(
-        df_inc, env.AMOUNT, env.ADJUSTMENT, 'subtract')
+    df_inc = data_help.combine_and_drop(df_inc, env.AMOUNT, env.ADJUSTMENT, 
+                                        'subtract')
     exp_dict = data_help.read_jsonFile(exp_path)
 
     if df_inc.empty:  # set index to datetime if empty.
@@ -476,13 +472,34 @@ if __name__ == "__main__":
                   notes_path,
                   bank_path]
 
+
+    # setup params for bank type
+    bank_sel_json = data_help.read_jsonFile(bank_path)
+    if bank_sel_json[env.BANK_SELECTION_KEY] == env.SCOTIABANK:
+        strip_cols = [env.TYPE, env.BANK_STORENAME]
+        check_for_dups_cols = env.CHECK_FOR_DUPLICATES_COL_NAMES
+        regex_str = env.RE_EXPR
+        ignorable_transactions = env.SCOTIA_IGNORABLE_TRANSACTIONS
+        exp_colnames = env.COLUMN_NAMES # used for initializing recycle bin
+        inc_colnames = env.SB_INC_COLNAMES
+    elif bank_sel_json[env.BANK_SELECTION_KEY] == env.CIBC:
+        strip_cols = [env.BANK_STORENAME]
+        check_for_dups_cols = env.CIBC_CHECK_FOR_DUPLICATES_COL_NAMES
+        regex_str = env.RE_EXPR_CIBC
+        ignorable_transactions = env.CIBC_IGNORABLE_TRANSACTIONS
+        exp_colnames = env.CIBC_EXPENSE_COLNAMES # used for initializing recycle bin
+        inc_colnames = env.CIBC_INCOME_COLNAMES
+
     initialize_dirs(list_of_dirs)
     initialize_dbs(json_paths)
     initialize_csvs([exp_recbin_path, inc_recbin_path], [
-                    env.COLUMN_NAMES, env.SB_INC_COLNAMES])
+                    exp_colnames, inc_colnames])
     # check for expense list and setup if none are there.
     expManager.setup_expense_names(exp_path)
+    # check for bank choice and setup if no choice is there.
     expManager.choose_bank(bank_path)
+
+
     print("--- --- --- --- --- --- --- --- --- --- --- --- ---")
     print("--- --- --- -- SHOW ME YOUR MONEY -- --- --- --- --")
     print(f"--- --- --- --- --- V. {env.VERSION} --- --- --- --- --- ---")
@@ -502,12 +519,14 @@ if __name__ == "__main__":
             if user_in == 'i':
                 backup_data([db_data_path, lib_data_path], backup_folderpath)
                 if check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adata_path,
-                                  db_exp_data_path, db_inc_data_path, exp_recbin_path, inc_recbin_path, bank_path):
+                                  db_exp_data_path, db_inc_data_path, exp_recbin_path, inc_recbin_path, 
+                                  bank_path, strip_cols, check_for_dups_cols):
                     ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths = find_data_paths(
                         ndata_path, adata_path, db_exp_data_path, db_inc_data_path, output_str="RECHECKING FILES")
-                    get_income(db_inc_data_fpaths)
+                    get_income(db_inc_data_fpaths, ignorable_transactions=ignorable_transactions)
                     get_expenses(db_exp_data_fpaths, db_inc_data_fpaths,
-                                 stor_pair_path, stor_exp_data_path, budg_path, exp_path, bank_path=bank_path)
+                                 stor_pair_path, stor_exp_data_path, budg_path, 
+                                 exp_path, regex_str=regex_str, ignorable_transactions=ignorable_transactions)
 
                 else:
                     print(
@@ -524,9 +543,10 @@ if __name__ == "__main__":
                     edit_money_data(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path,
                                     exp_path, db_inc_data_fpaths, exp_recbin_path, inc_recbin_path,  notes_path)
                 elif user_in == 'v':
-                    get_income(db_inc_data_fpaths)
+                    get_income(db_inc_data_fpaths, ignorable_transactions=ignorable_transactions)
                     get_expenses(db_exp_data_fpaths, db_inc_data_fpaths,
-                                 stor_pair_path, stor_exp_data_path, budg_path, exp_path, bank_path=bank_path)
+                                 stor_pair_path, stor_exp_data_path, budg_path, 
+                                 exp_path, regex_str=regex_str, ignorable_transactions=ignorable_transactions)
                     view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path,
                                     budg_path, notes_path, exp_path, dont_print_cols=[env.INC_UUID, env.EXP_UUID])
             else:

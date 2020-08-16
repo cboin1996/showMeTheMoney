@@ -176,19 +176,20 @@ def move_files(files, dest):
 
 def filter_by_amnt(df, col_name, col_name2=None, bank_name=None):
     """
-    Takes a dataframe with positive and negative dollara mounts, and returns two frames: one with pos and one with neg.. where the negs are set to positive.
+    Takes a dataframe with positive and negative dollara mounts, and returns two frames: 
+        one with pos and one with neg.. where the negs are set to positive.
     """
     if bank_name == env.SCOTIABANK:
         inc_df = df[df[col_name] > 0].copy()
         exp_df = df[df[col_name] < 0].copy()
         exp_df.loc[:, col_name] = exp_df[col_name].abs()
     elif bank_name == env.CIBC:
-        inc_df = df[df[env.NULL].notna()]
-        inc_df.drop(columns=[env.AMOUNT], inplace=True)
-        inc_df.rename(columns={env.NULL: env.AMOUNT}, inplace=True)
+        inc_df = df[df[col_name2].notna()]
+        inc_df.drop(columns=[col_name], inplace=True)
+        inc_df.rename(columns={col_name2: col_name}, inplace=True)
 
-        exp_df = df[df[env.AMOUNT].notna()]
-        exp_df.drop(columns=[env.NULL], inplace=True)
+        exp_df = df[df[col_name].notna()]
+        exp_df.drop(columns=[col_name2], inplace=True)
     return inc_df, exp_df
 
 
