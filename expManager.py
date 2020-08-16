@@ -143,7 +143,7 @@ def get_budgets(budg_path, exp_path, dates=None):
     return
 
 
-def get_expenses_for_rows(df, stor_exp_data_path, stor_data_path, budg_path, regex_str):
+def get_expenses_for_rows(df, stor_exp_data_path, stor_data_path, budg_path, regex_str, bank_name):
     """
     Gets the expense data for stores, prompting the user when multiple expenses exist for a store
     params:
@@ -177,13 +177,17 @@ def get_expenses_for_rows(df, stor_exp_data_path, stor_data_path, budg_path, reg
                         print(f"Unable to filter - {row[env.BANK_STORENAME]}")
                         storename = row[env.BANK_STORENAME]
 
-                else:  # cqtch the NaN case
+                elif bank_name == env.SCOTIABANK:  # cqtch the NaN case, scotia includes type column with data
                     query = row[env.TYPE].lower()
                     print(query)
                     storename = query
+                
+                else: # default case use empty str
+                    print("No storename exists for this transaction.")
+                    storename = ""
 
-                print("Curr Transaction:  %-10s | %-10s | %-10s | %-10s" %
-                      (row[env.DATE], row[env.AMOUNT], storename, row[env.TYPE]))
+                print("Curr Transaction:  %-10s | %-10s | %-10s " %
+                      (row[env.DATE], row[env.AMOUNT], storename))
                 selected_exp, exp_stor_db, stor_db, storename = search_store_relationships(storename, exp_stor_db, budg_db[month_end_date],
                                                                                            stor_exp_data_path, stor_db, stor_data_path)
                 df.at[idx, env.FILT_STORENAME] = storename
