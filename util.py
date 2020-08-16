@@ -6,6 +6,38 @@ import pyautogui
 import data_help
 
 import expManager
+
+class Bankconfig:
+    """
+    Class for carrying the bank's configuration settings
+    params:
+        bank_path - the path to the bank_choices json file
+        strip_cols - columns to strip for whitespace in a dataframe
+        check_for_dups_col - columns to use as a subset for checking for duplicates in a dataframe
+        regex_str - the regex used while parsing bank's data
+        ignorable_transactions - the transactions that are ignored in a dataframe
+        exp_colnames - the expense dataframe columns
+        inc_colnames - the income dataframe columns
+    """
+    def __init__(self,  
+                bank_path,
+                strip_cols,
+                check_for_dups_cols,
+                regex_str,
+                ignorable_transactions,
+                exp_colnames,
+                inc_colnames,
+                exp_dtypes,
+                inc_dtypes):
+        self.bank_path = bank_path
+        self.strip_cols = strip_cols
+        self.check_for_dups_cols = check_for_dups_cols
+        self.regex_str = regex_str
+        self.ignorable_transactions = ignorable_transactions
+        self.exp_colnames = exp_colnames
+        self.inc_colnames = inc_colnames
+        self.exp_dtypes = exp_dtypes
+        self.inc_dtypes = inc_dtypes
 def get_current_month():
     today = datetime.datetime.today()
     datem = datetime.datetime(today.year, today.month, 1).strftime("%Y-%m-%d")
