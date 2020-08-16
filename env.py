@@ -3,7 +3,7 @@ import re
 import pandas as pd
 
 
-VERSION = "1.30"
+VERSION = "1.40"
 """
 Dataframe Headers
 """
@@ -15,6 +15,8 @@ TYPE = 'Type'
 BANK_STORENAME = 'BankStoreName'
 FILT_STORENAME = 'FilteredStoreName'
 EXPENSE = 'Expense'
+INC_UUID = 'Income_UUID'
+EXP_UUID = 'Expense_UUID'
 
 BUDGET = 'Budget'
 REMAINING = 'Remaining'
@@ -23,12 +25,14 @@ SB_BASE_CREDIT_COLNAMES = [DATE, BANK_STORENAME, AMOUNT]
 SB_BASE_DEBIT_COLNAMES = [DATE, AMOUNT, NULL, TYPE, BANK_STORENAME]
 SB_INC_COLNAMES = [DATE, AMOUNT, TYPE, BANK_STORENAME]
 
-COLUMN_NAMES = [DATE, AMOUNT, ADJUSTMENT, TYPE, BANK_STORENAME, FILT_STORENAME, EXPENSE]
-INC_COL_NAMES = [DATE, AMOUNT, ADJUSTMENT, TYPE, BANK_STORENAME]
+COLUMN_NAMES = [DATE, AMOUNT, ADJUSTMENT, TYPE, BANK_STORENAME, FILT_STORENAME, EXPENSE,EXP_UUID, INC_UUID]
+INC_COL_NAMES = [DATE, AMOUNT, ADJUSTMENT, TYPE, BANK_STORENAME, INC_UUID, EXP_UUID]
 CHECK_FOR_DUPLICATES_COL_NAMES = [DATE, AMOUNT, TYPE, BANK_STORENAME]
 
-INC_dtypes = {DATE : 'str', AMOUNT : 'float', ADJUSTMENT : 'float', TYPE : 'str', BANK_STORENAME : "str"}
-expdf_types = {DATE : 'str', AMOUNT : 'float', ADJUSTMENT : 'float', TYPE : 'str', BANK_STORENAME : "str", FILT_STORENAME : "str", EXPENSE : 'str'}
+INC_dtypes = {DATE : 'str', AMOUNT : 'float', ADJUSTMENT : 'float', TYPE : 'str', BANK_STORENAME : "str", INC_UUID : "str", EXP_UUID : "str"}
+
+expdf_types = {DATE : 'str', AMOUNT : 'float', ADJUSTMENT : 'float', 
+               TYPE : 'str', BANK_STORENAME : "str", FILT_STORENAME : "str", EXPENSE : 'str', EXP_UUID : "str", INC_UUID : "str"}
 pdates_colname = [DATE]
 mydateparser = lambda x: pd.datetime.strptime(x, "%Y-%m-%d")
 
@@ -86,7 +90,7 @@ CREDIT
 """
 
 SCOTIA_IGNORABLE_TRANSACTIONS = ['MB-CREDIT CARD/LOC PAY.', 'MB-TRANSFER', 'PC TO', 'PC FROM', 'MB-CASH ADVANCE', 
-                                 'MB - CASH ADVANCE', 'PC - PAYMENT FROM']
+                                 'MB - CASH ADVANCE', 'PC - PAYMENT']
 IGNORABLE_TRANSACTIONS = SCOTIA_IGNORABLE_TRANSACTIONS # FOR FUTURE JUST + NEW ARRAYS OF IGNORABLE TRANSACTIONS
 
 EXPENSE_MISC_STR = "Misc"

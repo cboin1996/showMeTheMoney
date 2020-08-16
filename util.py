@@ -303,10 +303,14 @@ def check_lst_for_values(lst, vals):
             idxs_matched.append(i)
     return idxs_matched
 
-def print_fulldf(df):
+def print_fulldf(df, dont_print_cols=None):
     with pd.option_context('display.max_rows', None, 'display.max_columns', None, 'display.expand_frame_repr', False):
         print(" --- --- --- --- --- ")
-        print(df)
+        if dont_print_cols is not None:
+            df_print = df.drop(columns=dont_print_cols)
+            print(df_print)
+        else:
+            print(df)
         print(" --- --- --- --- --- ")
 
 def add_set_to_set(orig_set, set_to_add, sort=False):
