@@ -11,7 +11,7 @@ class Bankconfig:
     """
     Class for carrying the bank's configuration settings
     params:
-        bank_path - the path to the bank_choices json file
+        settings_path - the path to the bank_choices json file
         strip_cols - columns to strip for whitespace in a dataframe
         check_for_dups_col - columns to use as a subset for checking for duplicates in a dataframe
         regex_str - the regex used while parsing bank's data
@@ -20,7 +20,7 @@ class Bankconfig:
         inc_colnames - the income dataframe columns
     """
     def __init__(self,  
-                bank_path,
+                settings_path,
                 strip_cols,
                 check_for_dups_cols,
                 regex_str,
@@ -29,7 +29,7 @@ class Bankconfig:
                 inc_colnames,
                 exp_dtypes,
                 inc_dtypes):
-        self.bank_path = bank_path
+        self.settings_path = settings_path
         self.strip_cols = strip_cols
         self.check_for_dups_cols = check_for_dups_cols
         self.regex_str = regex_str
@@ -242,20 +242,30 @@ def prompt_with_warning(prompt, ret_lowercase=True):
     
     return user_in
 
-def format_input_to_list(prompt):
+def format_input_to_list(prompt, mode='string'):
     """
     Used for getting the words in a list and verifying they are all strings
+    params:
+        prompt - the prompt to the user
+        mode - whether parse to an integer list or a string list upon input
     """
     flag = False
     lst = []
     while not flag:
+        prompt += f"Expecting '{mode}' vals in format e.g. (val1 val2 val3): "
         user_in = input(prompt)
-        match = re.search(r"[\w\s]+", user_in)
+        if mode == 'integer':
+            match = re.search(r"[\d\s]+", user_in) 
+        elif mode == 'string':
+            match = re.search(r"[\w\s]+", user_in)
         if match:
             flag = True
             lst = match.group(0).split(' ')
+
+            if mode == 'integer':
+                lst = [int(item) for item in lst]
         else:
-            print("Invalid input")
+            print(f"Invalid input. Must be {mode}'s separated by spaces")
 
     return lst 
 
@@ -390,6 +400,28 @@ def edit_list_in_dict(prompt, options, dct, key, dct_path, add=True):
         data_help.write_to_jsonFile(dct_path, dct)
     else:
         return None
+
+def get_input_given_type(prompt, data_type, abortchar='q'):
+    done = False 
+    while not done:
+        try:
+            
+            if data_type == list:
+                user_in = format_input_to_list(prompt, mode='integer')
+            else:
+                user_in = input(prompt)
+            if user_in == 'q':
+                print("Aborting.")
+
+            user_in = data_type(user_in)
+            if type(user_in) is not data_type:
+                print(f"Please input '{data_type}' for this entry!")
+            else:
+                done = True
+        except ValueError:
+            print(f"Please input {type(user_in)} for this entry!")
+        
+    return user_in
 
 if __name__=="__main__":
     format_input_to_list("Input words seped by spaces: ")

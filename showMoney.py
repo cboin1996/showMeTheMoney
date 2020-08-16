@@ -45,6 +45,12 @@ def initialize_csvs(list_of_csvs, list_of_cols):
             df = pd.DataFrame(columns=item[1])
             data_help.write_data(df, item[0])
 
+def initialize_settings(settings_path):
+    settings = data_help.read_jsonFile(settings_path)
+    for key in env.SETTINGS_KEYS:
+        if key not in settings.keys():
+            settings[key] = env.SETTINGS_TEMPL[key]
+    data_help.write_to_jsonFile(settings_path, settings)
 
 def find_data_paths(ndata_path, adata_path, db_exp_data_path, db_inc_data_path, output_str=""):
     """
@@ -82,7 +88,7 @@ def check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adat
     if len(ndata_filepaths) == 0:
         return False
 
-    bank_sel_json = data_help.read_jsonFile(bankconfig.bank_path)
+    bank_sel_json = data_help.read_jsonFile(bankconfig.settings_path)
 
     if len(ndata_filepaths) != 0 and len(db_exp_data_fpaths) != 0 and len(db_inc_data_fpaths) != 0:
         df_new = data_help.load_and_process_csvs(file_paths=ndata_filepaths, strip_cols=bankconfig.strip_cols,
@@ -166,9 +172,10 @@ def edit_money_data(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg
                         "(c) - expenses",
                         "(d) - imported data",
                         "(e) - notes",
+                        "(f) - settings",
                         "(q) to quit?",
                         "Type Here: "))
-    prompt_chars = ['a', 'b', 'c', 'd', 'e', 'q']
+    prompt_chars = ['a', 'b', 'c', 'd', 'e', 'f', 'q']
     done = False
     while not done:
         print("          ----|$$| EDITOR MENU |$$|----         ")
@@ -187,6 +194,9 @@ def edit_money_data(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg
         elif user_in == 'e':
             editor.notes_editor(db_exp_data_fpaths,
                                 db_inc_data_fpaths, notes_path, bankconfig=bankconfig)
+        
+        elif user_in == 'f':
+            editor.edit_settings(bankconfig.settings_path)
 
         elif user_in == 'q':
             print("Exited editor.")
@@ -199,7 +209,7 @@ def get_expenses(db_exp_data_fpaths: list, db_inc_data_fpaths: list, stor_pair_p
     """
     main method for the importing of expense data
     """
-    bank_json = data_help.read_jsonFile(bankconfig.bank_path)
+    bank_json = data_help.read_jsonFile(bankconfig.settings_path)
     bank_name = bank_json[env.BANK_SELECTION_KEY]
     exp_df = data_help.load_csvs(db_exp_data_fpaths, dtype=bankconfig.exp_dtypes,
                                  parse_dates=env.pdates_colname)  # only using on csv db for now. newest will be last? idk verify later.
@@ -229,7 +239,8 @@ def get_income(db_inc_data_fpaths: list, dont_print_cols=None, bankconfig=None):
     util.print_fulldf(inc_df, dont_print_cols)
 
 
-def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, notes_path, exp_path, dont_print_cols=None, bankconfig=None):
+def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, notes_path, exp_path, 
+                    dont_print_cols=None, bankconfig=None, settings_path=None):
     """
     main method for the viewing of data
     params:
@@ -246,6 +257,8 @@ def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor
     df_inc = data_help.combine_and_drop(df_inc, env.AMOUNT, env.ADJUSTMENT, 
                                         'subtract')
     exp_dict = data_help.read_jsonFile(exp_path)
+
+    settings = data_help.read_jsonFile(settings_path)
 
     if df_inc.empty:  # set index to datetime if empty.
         df_inc.set_index(pd.to_datetime(df_inc.index), inplace=True)
@@ -303,12 +316,12 @@ def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor
                 title_templ_for_budg = "%s\nIncome: %s | Expenses: %s | Budget: %s\nNet Income: %s | Budget Rem.: %s | Budget Rem. without %s : %s"
                 subtractable_expenses = exp_dict[env.EXPENSES_SUBTRACTED_KEY]
 
-            budg_plotter(df_exp_budg_per_month, df_exp_budg_per_month.groupby(level=0).sum(), df_inc, (15, 12), nrows=3, ncols=1,
-                         subfigs_per_fig=3, title_templ=title_templ_for_budg, show=False, sort_by_level=0, notes=notes_dict, subtractable_expenses=subtractable_expenses,
-                         tbox_color='wheat', tbox_style='round', tbox_alpha=0.5)
+            budg_plotter(df_exp_budg_per_month, df_exp_budg_per_month.groupby(level=0).sum(), df_inc, figsize=settings[env.PLOT_SIZE_KEY], nrows=settings[env.NUM_ROWS_KEY], 
+                        ncols=settings[env.NUM_COLS_KEY], subfigs_per_fig=3, title_templ=title_templ_for_budg, show=False, sort_by_level=0, notes=notes_dict, 
+                        subtractable_expenses=subtractable_expenses, tbox_color='wheat', tbox_style='round', tbox_alpha=0.5)
             title_templ_for_stor_plt = "%s\nIncome: %s | Expenses: %s | Budget: %s\nNet Income: %s | Budget Rem.: %s"
-            budg_plotter(df_exp_stor_per_month, df_exp_budg_per_month.groupby(level=0).sum(), df_inc, (15, 12), nrows=3, ncols=1,
-                         subfigs_per_fig=3, title_templ=title_templ_for_stor_plt, show=True, sort_by_level=0, notes=notes_dict,
+            budg_plotter(df_exp_stor_per_month, df_exp_budg_per_month.groupby(level=0).sum(), df_inc, figsize=settings[env.PLOT_SIZE_KEY], nrows=settings[env.NUM_ROWS_KEY], 
+                        ncols=settings[env.NUM_COLS_KEY], subfigs_per_fig=3, title_templ=title_templ_for_stor_plt, show=True, sort_by_level=0, notes=notes_dict,
                          tbox_color='wheat', tbox_style='round', tbox_alpha=0.5)
 
 
@@ -463,14 +476,14 @@ if __name__ == "__main__":
     stor_pair_path = os.path.join(lib_data_path, env.STORE_PAIR_FNAME)
     exp_path = os.path.join(lib_data_path, env.EXP_FNAME)
     notes_path = os.path.join(lib_data_path, env.NOTES_FNAME)
-    bank_path = os.path.join(lib_data_path, env.BANK_JSON_FNAME)
+    settings_path = os.path.join(lib_data_path, env.SETTINGS_JSON_NAME)
 
     json_paths = [budg_path,
                   stor_exp_data_path,
                   stor_pair_path,
                   exp_path,
                   notes_path,
-                  bank_path]
+                  settings_path]
 
     initialize_dirs(list_of_dirs)
     initialize_dbs(json_paths)
@@ -478,11 +491,14 @@ if __name__ == "__main__":
     # check for expense list and setup if none are there.
     expManager.setup_expense_names(exp_path)
     # check for bank choice and setup if no choice is there.
-    expManager.choose_bank(bank_path)
-    bank_sel_json = data_help.read_jsonFile(bank_path)
+    expManager.choose_bank(settings_path)
+    # initialize settings
+    initialize_settings(settings_path)
+
+    bank_sel_json = data_help.read_jsonFile(settings_path)
     if bank_sel_json[env.BANK_SELECTION_KEY] == env.SCOTIABANK:
         bankconfig = util.Bankconfig(
-            bank_path = bank_path,
+            settings_path = settings_path,
             strip_cols = [env.TYPE, env.BANK_STORENAME],
             check_for_dups_cols = env.CHECK_FOR_DUPLICATES_COL_NAMES,
             regex_str = env.RE_EXPR,
@@ -495,7 +511,7 @@ if __name__ == "__main__":
 
     elif bank_sel_json[env.BANK_SELECTION_KEY] == env.CIBC:
         bankconfig = util.Bankconfig(
-            bank_path = bank_path,
+            settings_path = settings_path,
             strip_cols = [env.BANK_STORENAME],
             check_for_dups_cols = env.CIBC_CHECK_FOR_DUPLICATES_COL_NAMES,
             regex_str = env.RE_EXPR_CIBC,
@@ -559,7 +575,7 @@ if __name__ == "__main__":
                                  exp_path, bankconfig=bankconfig)
                     view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path,
                                     budg_path, notes_path, exp_path, dont_print_cols=[env.INC_UUID, env.EXP_UUID], 
-                                    bankconfig=bankconfig)
+                                    bankconfig=bankconfig, settings_path=settings_path)
             else:
                 print(
                     f"No data found. Please place files in {ndata_path} so I can eat.")

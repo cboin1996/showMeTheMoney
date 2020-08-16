@@ -549,6 +549,23 @@ def df_swap(prompt=None, df_to_move_from=None, df_to_move_to=None, df_to_move_fr
                                                                                     df_to_move_to, cross_check_col)
         data_help.write_data(df_to_move_to, df_to_move_to_path, sortby=env.DATE)
         data_help.write_data(df_to_move_from, df_to_move_from_path, sortby=env.DATE)
+    
+def edit_settings(settings_path):
+    """
+    Main interface for editing settings for the app
+    """
+    done = False 
+    prompt = "Please select a setting to edit (type 'q' to quit): "
+    while not done:
+        settings = data_help.read_jsonFile(settings_path)
+        setting_sels = util.select_indices_of_list(prompt, list(settings.keys()), return_matches=True, abortable=True, abortchar=True, print_lst=True)
+        for setting in setting_sels:
+            data_type = type(settings[setting])
+            value = util.get_input_given_type(f"Enter your '{data_type}' for {setting}={settings[setting]}. ", data_type, abortchar='q')
+            if value is not None: # none type returned upon quit
+                settings[setting] = value
+                done = True
+                data_help.write_to_jsonFile(settings_path, settings)
 
 def edit_df_entries(df, df_path, column_name, old_entry, new_entry):
     """

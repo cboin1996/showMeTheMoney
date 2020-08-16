@@ -70,12 +70,19 @@ CIBC_INC_DTYPES = {DATE: 'str', AMOUNT: 'float', ADJUSTMENT: 'float',
                    BANK_STORENAME: "str", INC_UUID: "str", EXP_UUID: "str"}
 # Bank Database Options
 BANK_OPTIONS = [SCOTIABANK, CIBC]
-BANK_CHOICES_KEY = "choices"
-BANK_SELECTION_KEY = 'user_selection'
+BANK_CHOICES_KEY = "bank choices"
+BANK_SELECTION_KEY = 'bank choice'
 
 # Common Across bank Dataframe Types
 pdates_colname = [DATE]
 
+# Settings options
+PLOT_SIZE_KEY = "Figure Size"
+PLOT_SIZE_DEFAULT = (15, 12)
+NUM_ROWS_KEY = "number of rows"
+NUM_ROWS_DEFAULT = 3
+NUM_COLS_KEY = "number of columns"
+NUM_COLS_DEFAULT = 1
 
 
 
@@ -122,8 +129,18 @@ BUDGET_FNAME = 'Budget.json'
 STORE_PAIR_FNAME = 'storePairs.json'
 EXP_FNAME = 'expenses.json'
 NOTES_FNAME = 'monthly_notes.json'
-BANK_JSON_FNAME = 'bank_choices.json'
+SETTINGS_JSON_NAME = 'settings.json'
 
+SETTINGS_KEYS = [PLOT_SIZE_KEY, # used for initializing settings keys in settings.json
+                NUM_ROWS_KEY,
+                NUM_COLS_KEY,
+                ]
+SETTINGS_TEMPL = {
+                    BANK_CHOICES_KEY: BANK_OPTIONS,
+                    PLOT_SIZE_KEY: PLOT_SIZE_DEFAULT,
+                    NUM_ROWS_KEY: NUM_ROWS_DEFAULT,
+                    NUM_COLS_KEY: NUM_COLS_DEFAULT,       
+}
 EXPENSE_DATA_KEY = 'expense'
 BUDGET_TOTAL_KEY = 'total'
 EXPENSES_SUBTRACTED_KEY = "subtract"
