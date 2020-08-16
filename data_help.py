@@ -116,7 +116,7 @@ def drop_rows(prompt, df):
         return None
 
 
-def drop_dups(df, col_names, ignore_index=False, strip_col=None):
+def drop_dups(df, col_names, ignore_index=False):
     """
     Drops any duplicates in a dataset, writes to file.
     """

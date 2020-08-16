@@ -49,7 +49,12 @@ CREDIT
 
 SCOTIA_IGNORABLE_TRANSACTIONS = ['MB-CREDIT CARD/LOC PAY.', 'MB-TRANSFER', 'PC TO', 'PC FROM', 'MB-CASH ADVANCE',
                                  'MB - CASH ADVANCE', 'PC - PAYMENT']
+                                
+SCOTIA_INC_DTYPES = {DATE: 'str', AMOUNT: 'float', ADJUSTMENT: 'float',
+              TYPE: 'str', BANK_STORENAME: "str", INC_UUID: "str", EXP_UUID: "str"}
 
+SCOTIA_EXP_DTYPES = {DATE: 'str', AMOUNT: 'float', ADJUSTMENT: 'float',
+               TYPE: 'str', BANK_STORENAME: "str", FILT_STORENAME: "str", EXPENSE: 'str', EXP_UUID: "str", INC_UUID: "str"}
 # CIBC
 CIBC_BASE_COLNAMES = [DATE, BANK_STORENAME, AMOUNT, NULL]
 CIBC_EXPENSE_COLNAMES = [DATE, BANK_STORENAME, AMOUNT, FILT_STORENAME, 
@@ -59,18 +64,16 @@ CIBC_CREDIT_COLNAMES = [DATE, BANK_STORENAME, AMOUNT, NULL, CIBC_CARD_NUM_COL]
 CIBC_CHECK_FOR_DUPLICATES_COL_NAMES = [DATE, AMOUNT, BANK_STORENAME]
 CIBC = 'CIBC'
 CIBC_IGNORABLE_TRANSACTIONS = ['INTERNET TRANSFER']
-
+CIBC_EXP_DTYPES = {DATE: 'str', AMOUNT: 'float', ADJUSTMENT: 'float',
+                  BANK_STORENAME: "str", FILT_STORENAME: "str", EXPENSE: 'str', EXP_UUID: "str", INC_UUID: "str"}
+CIBC_INC_DTYPES = {DATE: 'str', AMOUNT: 'float', ADJUSTMENT: 'float',
+                   BANK_STORENAME: "str", INC_UUID: "str", EXP_UUID: "str"}
 # Bank Database Options
 BANK_OPTIONS = [SCOTIABANK, CIBC]
 BANK_CHOICES_KEY = "choices"
 BANK_SELECTION_KEY = 'user_selection'
 
-# Default Dataframe Types
-INC_dtypes = {DATE: 'str', AMOUNT: 'float', ADJUSTMENT: 'float',
-              TYPE: 'str', BANK_STORENAME: "str", INC_UUID: "str", EXP_UUID: "str"}
-
-expdf_types = {DATE: 'str', AMOUNT: 'float', ADJUSTMENT: 'float',
-               TYPE: 'str', BANK_STORENAME: "str", FILT_STORENAME: "str", EXPENSE: 'str', EXP_UUID: "str", INC_UUID: "str"}
+# Common Across bank Dataframe Types
 pdates_colname = [DATE]
 
 

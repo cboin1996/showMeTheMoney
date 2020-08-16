@@ -8,14 +8,14 @@ import data_help
 import env
 import expManager
 
-def notes_editor(db_exp_data_fpaths, db_inc_data_fpaths, notes_path):
+def notes_editor(db_exp_data_fpaths, db_inc_data_fpaths, notes_path,  bankconfig=None):
     """
     Main menu for editing notes
     """
     done = False
     while not done:
-        exp_df = data_help.load_csvs(db_exp_data_fpaths, dtype=env.expdf_types, parse_dates=env.pdates_colname)
-        inc_df = data_help.load_csvs(db_inc_data_fpaths, dtype=env.INC_dtypes, parse_dates=env.pdates_colname)
+        exp_df = data_help.load_csvs(db_exp_data_fpaths, dtype=bankconfig.exp_dtypes, parse_dates=env.pdates_colname)
+        inc_df = data_help.load_csvs(db_inc_data_fpaths, dtype=bankconfig.inc_dtypes, parse_dates=env.pdates_colname)
         notes_dict = data_help.read_jsonFile(notes_path)
 
         exp_months = data_help.extract_months(exp_df[env.DATE], start=False)
@@ -64,7 +64,7 @@ def edit_notes(prompt, notes, months, notes_path):
     return notes
 
 
-def store_editor(db_exp_data_fpaths, stor_pair_path, exp_stor_data_path, budg_path, exp_path):
+def store_editor(db_exp_data_fpaths, stor_pair_path, exp_stor_data_path, budg_path, exp_path, bankconfig=None):
     """
     Edits a store's name across all databases.
     params:
@@ -76,7 +76,7 @@ def store_editor(db_exp_data_fpaths, stor_pair_path, exp_stor_data_path, budg_pa
     
     done = False
     while not done:
-        df = data_help.load_csvs(db_exp_data_fpaths, dtype=env.expdf_types, parse_dates=env.pdates_colname)
+        df = data_help.load_csvs(db_exp_data_fpaths, dtype=bankconfig.exp_dtypes, parse_dates=env.pdates_colname)
         stor_data = data_help.read_jsonFile(stor_pair_path)
         exp_stor_data = data_help.read_jsonFile(exp_stor_data_path)
         exp_data = data_help.read_jsonFile(exp_path)
@@ -149,14 +149,14 @@ def change_storepair(db_exp_data_fpaths, df, exp_stor_data, stor_data, stor_pair
             data_help.write_to_jsonFile(stor_pair_path, stor_data) 
             util.print_fulldf(df)
             
-def expenses_editor(db_exp_data_fpaths, stor_pair_path, exp_stor_data_path, budg_path, exp_path):
+def expenses_editor(db_exp_data_fpaths, stor_pair_path, exp_stor_data_path, budg_path, exp_path, bankconfig=None):
     """
     Edits an expense's name across all databases
     """
     done = False
     while not done:
         exp_data = data_help.read_jsonFile(exp_path)
-        df = data_help.load_csvs(db_exp_data_fpaths, dtype=env.expdf_types, parse_dates=env.pdates_colname)
+        df = data_help.load_csvs(db_exp_data_fpaths, dtype=bankconfig.exp_dtypes, parse_dates=env.pdates_colname)
         stor_data = data_help.read_jsonFile(stor_pair_path)
         exp_stor_data = data_help.read_jsonFile(exp_stor_data_path)
         budg_data = data_help.read_jsonFile(budg_path)
@@ -391,26 +391,33 @@ def remove_exp_from_store(df_path, df, exp_stor_data, exp_stor_data_path):
                     edit_df_entries_given_columns(df, df_path, env.EXPENSE, env.FILT_STORENAME, storename, rem_exp, new_exp)
                 data_help.write_to_jsonFile(exp_stor_data_path, exp_stor_data)
 
-def df_editor_menu(db_inc_data_fpaths, inc_recbin_path, db_exp_data_fpaths, exp_recbin_path):
+def df_editor_menu(db_inc_data_fpaths, inc_recbin_path, db_exp_data_fpaths, exp_recbin_path, bankconfig=None):
     done = False
     while not done:
         prompt = "Which one:\n(a) - income\n(b) - expenses\n(c) - income recycle bin\n"
-        prompt = prompt + "(d) - expenses recycle bin\n(e) - transaction prices\n(q) - quit\nType here: "
+        prompt = prompt + "(d) - expenses recycle bin\n(q) - quit\nType here: "
         df_user_in = util.get_user_input_for_chars(prompt, ['a', 'b', 'c', 'd', 'q'])
         if df_user_in == 'a':
             df_editor(db_inc_data_fpaths[0], df_to_move_to_path=inc_recbin_path, 
-                      df_with_reductions_path=db_exp_data_fpaths[0], df_to_move_reduction_to_path=exp_recbin_path, uuid_col=env.INC_UUID, df_reduct_uuid_col=env.EXP_UUID)
+                      df_with_reductions_path=db_exp_data_fpaths[0], df_to_move_reduction_to_path=exp_recbin_path, 
+                      uuid_col=env.INC_UUID, df_reduct_uuid_col=env.EXP_UUID, bankconfig=bankconfig, dtype='inc')
         elif df_user_in == 'b':
             df_editor(db_exp_data_fpaths[0], df_to_move_to_path=exp_recbin_path, 
-                      df_with_reductions_path=db_inc_data_fpaths[0], df_to_move_reduction_to_path=inc_recbin_path, uuid_col=env.EXP_UUID, df_reduct_uuid_col=env.INC_UUID)
+                      df_with_reductions_path=db_inc_data_fpaths[0], df_to_move_reduction_to_path=inc_recbin_path, 
+                      uuid_col=env.EXP_UUID, df_reduct_uuid_col=env.INC_UUID, bankconfig=bankconfig, dtype='exp')
         elif df_user_in == 'c':
-            df_editor(inc_recbin_path, df_to_move_to_path=db_inc_data_fpaths[0], restorable=True, df_with_reductions_path=db_exp_data_fpaths[0], df_reduct_uuid_col=env.EXP_UUID) # function takes list of csvs as input
+            df_editor(inc_recbin_path, df_to_move_to_path=db_inc_data_fpaths[0], restorable=True, 
+                      df_with_reductions_path=db_exp_data_fpaths[0], df_reduct_uuid_col=env.EXP_UUID, bankconfig=bankconfig,
+                      dtype='inc') # function takes list of csvs as input
         elif df_user_in == 'd':
-            df_editor(exp_recbin_path, df_to_move_to_path=db_exp_data_fpaths[0], restorable=True, df_with_reductions_path=db_inc_data_fpaths[0], df_reduct_uuid_col=env.INC_UUID) 
+            df_editor(exp_recbin_path, df_to_move_to_path=db_exp_data_fpaths[0], restorable=True, 
+                     df_with_reductions_path=db_inc_data_fpaths[0], df_reduct_uuid_col=env.INC_UUID, bankconfig=bankconfig,
+                     dtype='exp') 
         elif df_user_in == 'q':
             done = True
 
-def df_editor(df_to_move_from_path, df_to_move_to_path = None, restorable=False, recycle=True, df_with_reductions_path=None,  df_to_move_reduction_to_path=None, uuid_col=None, df_reduct_uuid_col=None):
+def df_editor(df_to_move_from_path, df_to_move_to_path = None, restorable=False, recycle=True, df_with_reductions_path=None,  
+              df_to_move_reduction_to_path=None, uuid_col=None, df_reduct_uuid_col=None, bankconfig=None, dtype=None):
     """
     Allows the editing of a dataframe
     params:
@@ -419,19 +426,31 @@ def df_editor(df_to_move_from_path, df_to_move_to_path = None, restorable=False,
         restorable - whether or not the df is restorable, if True, will not recycle
         recycle - whether or not data deleted from a frame will be moved to another or lost
         df_with_reductions_path - the path to the dataframe containing prices to reduce df_to_move_from_path by
+        dtype - specifies how the csv dataypes should be setup when loading.  
     """
     done = False
+    if dtype == 'exp':
+        dtype_move_from = bankconfig.exp_dtypes 
+        dtype_move_to = bankconfig.exp_dtypes
+        dtype_with_red = bankconfig.inc_dtypes
+        dtype_move_red_to = bankconfig.inc_dtypes
+    elif dtype == 'inc':
+        dtype_move_from = bankconfig.inc_dtypes 
+        dtype_move_to = bankconfig.inc_dtypes
+        dtype_with_red = bankconfig.exp_dtypes
+        dtype_move_red_to = bankconfig.exp_dtypes
+
     while not done:
-        df_to_move_from = data_help.load_csv(df_to_move_from_path, dtype=env.expdf_types, parse_dates=env.pdates_colname)
+        df_to_move_from = data_help.load_csv(df_to_move_from_path, dtype=dtype_move_from, parse_dates=env.pdates_colname)
         
         if df_to_move_to_path is not None:
-            df_to_move_to = data_help.load_csv(df_to_move_to_path, dtype=env.expdf_types, parse_dates=env.pdates_colname)
+            df_to_move_to = data_help.load_csv(df_to_move_to_path, dtype=dtype_move_to, parse_dates=env.pdates_colname)
         
         if df_with_reductions_path is not None:
-            df_with_reductions = data_help.load_csv(df_with_reductions_path, dtype=env.expdf_types, parse_dates=env.pdates_colname)
+            df_with_reductions = data_help.load_csv(df_with_reductions_path, dtype=dtype_with_red, parse_dates=env.pdates_colname)
 
         if df_to_move_reduction_to_path is not None:
-            df_to_move_reduction_to = data_help.load_csv(df_to_move_reduction_to_path, dtype=env.expdf_types, parse_dates=env.pdates_colname)
+            df_to_move_reduction_to = data_help.load_csv(df_to_move_reduction_to_path, dtype=dtype_move_red_to, parse_dates=env.pdates_colname)
         
         if restorable == False:
             prompt = "Would you like to: \n(a) - move transactions to the recycle bin\n(b) - adjust a transaction price manually\n"
