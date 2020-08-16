@@ -317,12 +317,12 @@ def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor
                 subtractable_expenses = exp_dict[env.EXPENSES_SUBTRACTED_KEY]
 
             budg_plotter(df_exp_budg_per_month, df_exp_budg_per_month.groupby(level=0).sum(), df_inc, figsize=settings[env.PLOT_SIZE_KEY], nrows=settings[env.NUM_ROWS_KEY], 
-                        ncols=settings[env.NUM_COLS_KEY], subfigs_per_fig=3, title_templ=title_templ_for_budg, show=False, sort_by_level=0, notes=notes_dict, 
-                        subtractable_expenses=subtractable_expenses, tbox_color='wheat', tbox_style='round', tbox_alpha=0.5)
+                        ncols=settings[env.NUM_COLS_KEY], subfigs_per_fig=settings[env.NUM_ROWS_KEY]*settings[env.NUM_COLS_KEY], title_templ=title_templ_for_budg, 
+                        show=False, sort_by_level=0, notes=notes_dict, subtractable_expenses=subtractable_expenses, tbox_color='wheat', tbox_style='round', tbox_alpha=0.5)
             title_templ_for_stor_plt = "%s\nIncome: %s | Expenses: %s | Budget: %s\nNet Income: %s | Budget Rem.: %s"
             budg_plotter(df_exp_stor_per_month, df_exp_budg_per_month.groupby(level=0).sum(), df_inc, figsize=settings[env.PLOT_SIZE_KEY], nrows=settings[env.NUM_ROWS_KEY], 
-                        ncols=settings[env.NUM_COLS_KEY], subfigs_per_fig=3, title_templ=title_templ_for_stor_plt, show=True, sort_by_level=0, notes=notes_dict,
-                         tbox_color='wheat', tbox_style='round', tbox_alpha=0.5)
+                        ncols=settings[env.NUM_COLS_KEY], subfigs_per_fig=settings[env.NUM_ROWS_KEY]*settings[env.NUM_COLS_KEY], title_templ=title_templ_for_stor_plt, 
+                        show=True, sort_by_level=0, notes=notes_dict, tbox_color='wheat', tbox_style='round', tbox_alpha=0.5)
 
 
 def budg_plotter(df_to_plot, budget_df, df_inc, figsize=None, nrows=None, ncols=None, subfigs_per_fig=None, title_templ="", show=True,
