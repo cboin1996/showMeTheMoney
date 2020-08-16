@@ -210,7 +210,7 @@ def get_expenses(db_exp_data_fpaths: list, db_inc_data_fpaths: list, stor_pair_p
     # check for any missing budgets either this month or any month in the data
     expManager.get_budgets(budg_path, exp_path, dates)
     exp_df = expManager.get_expenses_for_rows(exp_df, stor_exp_data_path, 
-                                              stor_pair_path, budg_path, regex_str)
+                                              stor_pair_path, budg_path, regex_str, bank_name)
     print("\nFinished gathering your expense data: \n")
     util.print_fulldf(exp_df, dont_print_cols)
     data_help.write_data(exp_df, db_exp_data_fpaths[0])
@@ -472,8 +472,13 @@ if __name__ == "__main__":
                   notes_path,
                   bank_path]
 
+    initialize_dirs(list_of_dirs)
+    initialize_dbs(json_paths)
 
-    # setup params for bank type
+    # check for expense list and setup if none are there.
+    expManager.setup_expense_names(exp_path)
+    # check for bank choice and setup if no choice is there.
+    expManager.choose_bank(bank_path)
     bank_sel_json = data_help.read_jsonFile(bank_path)
     if bank_sel_json[env.BANK_SELECTION_KEY] == env.SCOTIABANK:
         strip_cols = [env.TYPE, env.BANK_STORENAME]
@@ -490,16 +495,8 @@ if __name__ == "__main__":
         exp_colnames = env.CIBC_EXPENSE_COLNAMES # used for initializing recycle bin
         inc_colnames = env.CIBC_INCOME_COLNAMES
 
-    initialize_dirs(list_of_dirs)
-    initialize_dbs(json_paths)
-    initialize_csvs([exp_recbin_path, inc_recbin_path], [
-                    exp_colnames, inc_colnames])
-    # check for expense list and setup if none are there.
-    expManager.setup_expense_names(exp_path)
-    # check for bank choice and setup if no choice is there.
-    expManager.choose_bank(bank_path)
-
-
+    initialize_csvs([exp_recbin_path, inc_recbin_path], 
+                    [exp_colnames, inc_colnames])
     print("--- --- --- --- --- --- --- --- --- --- --- --- ---")
     print("--- --- --- -- SHOW ME YOUR MONEY -- --- --- --- --")
     print(f"--- --- --- --- --- V. {env.VERSION} --- --- --- --- --- ---")
