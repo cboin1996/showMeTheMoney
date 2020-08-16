@@ -17,7 +17,7 @@ def setup_expense_names(exp_path: str):
     exp_list = data_help.read_jsonFile(exp_path)
     if len(exp_list) == 0:
         exp_list[env.EXPENSE_DATA_KEY] = util.format_input_to_list(
-            "Please input your expense categories, separated by a space [exp1 exp2 ...] I will add a Misc category since it is reserved: ")
+            "Please input your expense categories, I will add a Misc category since it is reserved. ")
         idxs_matched = util.check_lst_for_values(
             exp_list[env.EXPENSE_DATA_KEY], env.MISC_POS_VALUES)
         for idx in sorted(idxs_matched, reverse=True):
