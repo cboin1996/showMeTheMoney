@@ -623,23 +623,27 @@ def change_budget_amounts(budg_data, budg_path):
     """
     Changes budget amounts selected by the user
     """
-    print(env.OUTPUT_SEP_STR)
-    prompt = "Which budget month would you like to edit eh? (q) to abort: "
-    dates = util.select_indices_of_list(prompt, list(budg_data.keys()), return_matches=True, abortable=True, abortchar='q')
-    if dates is not None: # none type returned if user aborts
-        for date in dates:
-            print(f"--- Editing {date} ---")
-            util.print_simple_dict(budg_data[date])
-            expenses = util.select_indices_of_list("Select an expense(s). (q) to abort: ", list(budg_data[date].keys()), return_matches=True, abortable=True, abortchar='q', print_lst=False)
-            if expenses is not None: # quit if user says so.
-                for exp in expenses:
-                    amnt = util.get_float_input(f"Enter the new amount for '{exp}': ", force_pos=True, roundto=2)
-                    budg_data[date][exp] = amnt
-            else:
-                return 
-        
-        data_help.write_to_jsonFile(budg_path, budg_data)
+    done = False
+    while not done:
+        print(env.OUTPUT_SEP_STR)
+        prompt = "Which budget month would you like to edit eh? (q) to abort: "
+        dates = util.select_indices_of_list(prompt, list(budg_data.keys()), return_matches=True, abortable=True, abortchar='q')
+        if dates is not None: # none type returned if user aborts
+            for date in dates:
+                print(f"--- Editing {date} ---")
+                util.print_simple_dict(budg_data[date])
+                expenses = util.select_indices_of_list("Select an expense(s). (q) to abort: ", list(budg_data[date].keys()), return_matches=True, abortable=True, abortchar='q', print_lst=False)
+                if expenses is not None: # quit if user says so.
+                    for exp in expenses:
+                        amnt = util.get_float_input(f"Enter the new amount for '{exp}': ", force_pos=True, roundto=2)
+                        budg_data[date][exp] = amnt
+                else:
+                    continue 
             
+            data_help.write_to_jsonFile(budg_path, budg_data)
+        
+        else:
+            done=True
             
     
 
