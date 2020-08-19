@@ -581,8 +581,9 @@ if __name__ == "__main__":
                     f"No data found. Please place files in {ndata_path} so I can eat.")
 
         if user_in == 'q':
-            print("Gone so soon? Ill be here if you need me. Goodby-")
-            print("Transmission Terminated.")
+            print("Gone so soon? Ill be here if you need me. Goodb--..")
+            print("Transmission Terminated Early to save you time as time is: ")
+            print("--- --- --- -- MONEY -- --- --- --- --")
             quit = True
 
 
