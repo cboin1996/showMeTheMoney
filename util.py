@@ -412,7 +412,7 @@ def get_input_given_type(prompt, data_type, abortchar='q'):
                 user_in = input(prompt)
             if user_in == 'q':
                 print("Aborting.")
-
+                return
             user_in = data_type(user_in)
             if type(user_in) is not data_type:
                 print(f"Please input '{data_type}' for this entry!")

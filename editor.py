@@ -23,11 +23,11 @@ def notes_editor(db_exp_data_fpaths, db_inc_data_fpaths, notes_path,  bankconfig
         months_in_data = util.add_set_to_set(exp_months, inc_months, sort=True)
         
         if notes_dict == {}:
-            prompt = "You have not entered any notes yet. Which month(s) would you like to add notes for? Type 'q' to quit: "
+            prompt = "You have not entered any notes yet. Which month(s) would you like to add notes for? 'q' aborts: "
             edit_prompt_base = "Please enter your note below for month "
 
         else:
-            prompt = "Please select a month to edit (q) to quit: "
+            prompt = "Please select a month to edit (q) aborts: "
             edit_prompt_base = "Edit your note below for month "
         
         sel_months = util.select_indices_of_list(prompt, list_to_compare_to=months_in_data, return_matches=True, abortable=True, abortchar='q')
@@ -54,7 +54,7 @@ def edit_notes(prompt, notes, months, notes_path):
             editable = notes[month]
         else:
             editable = ""
-        note = util.get_editable_input(prompt + f"[{month}], or ctrl-c to quit process. " + "Tip: use (\\n) to denote new lines for plotting: ", editable=editable)
+        note = util.get_editable_input(prompt + f"[{month}], or ctrl-c aborts process. " + "Tip: use (\\n) to denote new lines for plotting: ", editable=editable)
         if note is not None: # note is None type upon quit
             notes[month] = note
             data_help.write_to_jsonFile(notes_path, notes)
@@ -94,7 +94,7 @@ def store_editor(db_exp_data_fpaths, stor_pair_path, exp_stor_data_path, budg_pa
     return
 
 def change_storename(db_exp_data_fpaths, df, exp_stor_data, stor_data, stor_pair_path, exp_stor_data_path):
-    storename = util.select_dict_key_using_integer(exp_stor_data, 'Please select a storename to change, (q) to quit: ', print_children=False, quit_str='q')
+    storename = util.select_dict_key_using_integer(exp_stor_data, 'Please select a storename to change, (q) aborts: ', print_children=False, quit_str='q')
     if storename != None: # select_dict_key_using_integer returns none if quitstr is given
         new_name = util.prompt_with_warning("Please enter your new storename: ", ret_lowercase=True)
         if new_name != None: # none is returned from prompt_with_warning when user wants to abort.
@@ -111,14 +111,14 @@ def change_storepair(db_exp_data_fpaths, df, exp_stor_data, stor_data, stor_pair
     """
     Allows user to change the pairing setup within stor_data, opting for the creation of a new store, or the repairing to a different store name
     """
-    bank_storename = util.select_dict_key_using_integer(stor_data, 'Please select your banks storename to change, (q) to quit: ', print_children=False, quit_str='q')
+    bank_storename = util.select_dict_key_using_integer(stor_data, 'Please select your banks storename to change, (q) aborts: ', print_children=False, quit_str='q')
     
     if bank_storename != None:
         print(f"\nYou currently have [{bank_storename}] paired with [{stor_data[bank_storename]}].")
         user_in = util.get_user_input_for_chars(f"\nDo you want to:\n(a) - re-pair [{bank_storename}] to an existing store you setup\n(b) - re-pair [{bank_storename}] to a new store name?\n(q) quit\nType here: ",
                                                 ['a', 'b', 'q'])
         if user_in == 'a':
-            new_pairing = util.select_from_list(list(exp_stor_data.keys()), f"\nPlease select a store to pair [{bank_storename}] to, or 'q' to quit: ", abortchar='q', ret_match=True)
+            new_pairing = util.select_from_list(list(exp_stor_data.keys()), f"\nPlease select a store to pair [{bank_storename}] to, or 'q' aborts: ", abortchar='q', ret_match=True)
         
         elif user_in == 'b':
             new_pairing = util.process_input(f"\nPlease input your new storename to be used with [{bank_storename}]: ")
@@ -190,10 +190,10 @@ def expenses_editor(db_exp_data_fpaths, stor_pair_path, exp_stor_data_path, budg
         elif user_in == 'f':
             remove_exp_from_store(db_exp_data_fpaths[0], df, exp_stor_data, exp_stor_data_path)
         elif user_in =='g':
-            prompt = "Which expense(s) would you like to be subtracted in the title to your plots? "
+            prompt = "Which expense(s) would you like to be subtracted in the title to your plots? (q) aborts: "
             util.edit_list_in_dict(prompt, exp_data[env.EXPENSE_DATA_KEY], exp_data, env.EXPENSES_SUBTRACTED_KEY, exp_path, add=True)
         elif user_in == 'h':
-            prompt = "Which expense(s) would you like to remove? "
+            prompt = "Which expense(s) would you like to remove? (q) aborts: "
             util.edit_list_in_dict(prompt, exp_data[env.EXPENSES_SUBTRACTED_KEY], exp_data, env.EXPENSES_SUBTRACTED_KEY, exp_path, add=False) 
         elif user_in == 'q':
             done = True
@@ -265,9 +265,12 @@ def remove_expense_from_dbs(exp_db_data_filepath, exp_stor_data, exp_data, budg_
             # remove from budget, adding amnt to Misc
             print(f"\n--- Editing {env.BUDGET_FNAME} --- ")
             for date in budg_data.keys(): 
-                amnt_to_misc = budg_data[date][exp_to_rem]
-                budg_data[date][env.EXPENSE_MISC_STR] += amnt_to_misc
-                budg_data[date].pop(exp_to_rem)
+                if exp_to_rem in budg_data[date].keys():
+                    amnt_to_misc = budg_data[date][exp_to_rem]
+                    budg_data[date][env.EXPENSE_MISC_STR] += amnt_to_misc
+                    budg_data[date].pop(exp_to_rem)
+                else:
+                    print(f"Expense not found for '{date}' in budget.")
 
             print(f"--- Editing {env.OUT_EXP_DATA_TEMPL} --- ")
             edit_df_entries(df, exp_db_data_filepath, env.EXPENSE, exp_to_rem, env.EXPENSE_MISC_STR)
@@ -292,13 +295,13 @@ def edit_cell_in_dfcol(db_data_filepath : str, df, col_name, opt_col=None, opt_d
     """
     index_list = df.index.tolist()
     util.print_fulldf(df)
-    prompt = f"Select some indices from the above dataframe column '{col_name}' to edit: (q) to quit: "
+    prompt = f"Select some indices from the above dataframe column '{col_name}' to edit: (q) aborts: "
     indices = util.select_indices_of_list(prompt, index_list, return_matches=True, abortable=True, abortchar='q', print_lst=False)
     if indices != None:
         for index in indices:
             if opt_col != None:
                 opt_key = df.loc[index, opt_col]
-                val = util.select_from_list(opt_dict[opt_key], f"Please select an option for cell [{index}] col '{col_name}' or (q) to quit: ", abortchar='q', ret_match=True)
+                val = util.select_from_list(opt_dict[opt_key], f"Please select an option for cell [{index}] col '{col_name}' or (q) aborts: ", abortchar='q', ret_match=True)
             
             else:
                 if col_type == 'float':
@@ -319,19 +322,23 @@ def add_expense(exp_data, exp_stor_data, exp_path, exp_stor_data_path):
     """
     flag = False 
     while not flag:
-        exp_input = input("Enter the expense you wish to add: ")
-        if exp_input not in exp_data[env.EXPENSE_DATA_KEY]:
-            exp_data[env.EXPENSE_DATA_KEY].append(exp_input)
-            data_help.write_to_jsonFile(exp_path, exp_data)
+        exp_input = input("Enter the expense you wish to add. 'q' aborts: ")
+        if exp_input != 'q':
+            if exp_input not in exp_data[env.EXPENSE_DATA_KEY]:
+                exp_data[env.EXPENSE_DATA_KEY].append(exp_input)
+                data_help.write_to_jsonFile(exp_path, exp_data)
 
-            user_in = util.get_user_input_for_chars("Do you want to add this expense to some stores [y/n]? ", ['y', 'n'])
-            if user_in == 'y':
-                add_expenses_to_store(exp_stor_data, exp_stor_data_path, list(exp_input))
+                user_in = util.get_user_input_for_chars("Do you want to add this expense to some stores [y/n]? ", ['y', 'n'])
+                if user_in == 'y':
+                    add_expenses_to_store(exp_stor_data, exp_stor_data_path, list(exp_input))
 
+                else:
+                    flag = True
             else:
-                flag = True
+                print(f"That expense already exists! Try another one. Heres the list of existing expenses: {exp_data[env.EXPENSE_DATA_KEY]}")
         else:
-            print(f"That expense already exists! Try another one. Heres the list of existing expenses: {exp_data[env.EXPENSE_DATA_KEY]}")
+            print("Aborting.")
+            flag = True
 
 def add_expenses_to_store(exp_stor_data, exp_stor_data_path, expenses):
     """
@@ -383,7 +390,7 @@ def remove_exp_from_store(df_path, df, exp_stor_data, exp_stor_data_path):
                         new_exp = exp_stor_data[storename][0]
                     else:
 
-                        new_exp = util.select_from_list(exp_stor_data[storename], f"Which expense do you want to use to replace '{rem_exp}' in '{storename}'? (q) to quit. ", abortchar='q',
+                        new_exp = util.select_from_list(exp_stor_data[storename], f"Which expense do you want to use to replace '{rem_exp}' in '{storename}'? (q) aborts. ", abortchar='q',
                                                         ret_match=True)
                         if new_exp is None: # user quits
                             return None 
@@ -498,13 +505,13 @@ def edit_df_transaction_price(df_to_edit, df_to_edit_path, col_to_use, df_to_mov
     """
     index_list = df_to_edit.index.tolist()
     util.print_fulldf(df_to_edit)
-    prompt = f"Select some indices from the above dataframe column '{col_to_use}' to edit: (q) to quit: "
+    prompt = f"Select some indices from the above dataframe column '{col_to_use}' to edit: (q) aborts: "
     indices = util.select_indices_of_list(prompt, index_list, return_matches=True, abortable=True, abortchar='q', print_lst=False)
     if indices is not None: # none type aborts
         for index in indices:
             reductions_index_list = df_with_reductions.index.tolist()
             util.print_fulldf(df_with_reductions)
-            prompt = f"Which index contains the transaction you want? (q) to quit: "
+            prompt = f"Which index contains the transaction you want? (q) aborts: "
             reduction_indices = util.select_indices_of_list(prompt, reductions_index_list, abortchar='q', return_matches=False, print_lst=False)
             if reduction_indices is not None: # none type aborts
                 for reduction_index in reduction_indices:
@@ -555,17 +562,20 @@ def edit_settings(settings_path):
     Main interface for editing settings for the app
     """
     done = False 
-    prompt = "Please select a setting to edit (type 'q' to quit): "
+    prompt = "Please select a setting to edit ('q' aborts): "
     while not done:
         settings = data_help.read_jsonFile(settings_path)
-        setting_sels = util.select_indices_of_list(prompt, list(settings.keys()), return_matches=True, abortable=True, abortchar=True, print_lst=True)
-        for setting in setting_sels:
-            data_type = type(settings[setting])
-            value = util.get_input_given_type(f"Enter your '{data_type}' for {setting}={settings[setting]}. ", data_type, abortchar='q')
-            if value is not None: # none type returned upon quit
-                settings[setting] = value
-                done = True
-                data_help.write_to_jsonFile(settings_path, settings)
+        setting_sels = util.select_indices_of_list(prompt, list(settings.keys()), return_matches=True, abortable=True, abortchar='q', print_lst=True)
+        if setting_sels is not None:
+            for setting in setting_sels:
+                data_type = type(settings[setting])
+                value = util.get_input_given_type(f"Enter datatype '{data_type.__name__}' for '{setting}' = {settings[setting]} ('q' aborts): ", data_type, abortchar='q')
+                if value is not None: # none type returned upon quit
+                    settings[setting] = value
+                    done = True
+                    data_help.write_to_jsonFile(settings_path, settings)
+        else:
+            done = True
 
 def edit_df_entries(df, df_path, column_name, old_entry, new_entry):
     """

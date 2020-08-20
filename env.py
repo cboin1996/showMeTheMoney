@@ -83,6 +83,10 @@ NUM_ROWS_KEY = "number of rows"
 NUM_ROWS_DEFAULT = 3
 NUM_COLS_KEY = "number of columns"
 NUM_COLS_DEFAULT = 1
+PARFIG_TITLE_FONTSIZE_KEY = "Parent figure title size"
+PARFIG_TITLE_FONTSIZE = 8
+SUBFIG_TITLE_FONTSIZE_KEY = "Subfigures title size"
+SUBFIG_TITLE_FONTSIZE = 12
 
 
 
@@ -134,12 +138,16 @@ SETTINGS_JSON_NAME = 'settings.json'
 SETTINGS_KEYS = [PLOT_SIZE_KEY, # used for initializing settings keys in settings.json
                 NUM_ROWS_KEY,
                 NUM_COLS_KEY,
+                PARFIG_TITLE_FONTSIZE_KEY,
+                SUBFIG_TITLE_FONTSIZE_KEY
                 ]
 SETTINGS_TEMPL = {
                     BANK_CHOICES_KEY: BANK_OPTIONS,
                     PLOT_SIZE_KEY: PLOT_SIZE_DEFAULT,
                     NUM_ROWS_KEY: NUM_ROWS_DEFAULT,
-                    NUM_COLS_KEY: NUM_COLS_DEFAULT,       
+                    NUM_COLS_KEY: NUM_COLS_DEFAULT,  
+                    PARFIG_TITLE_FONTSIZE_KEY : PARFIG_TITLE_FONTSIZE,
+                    SUBFIG_TITLE_FONTSIZE_KEY : SUBFIG_TITLE_FONTSIZE     
 }
 EXPENSE_DATA_KEY = 'expense'
 BUDGET_TOTAL_KEY = 'total'
