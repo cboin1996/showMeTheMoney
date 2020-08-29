@@ -11,3 +11,4 @@ lib
 # Do not track these files
 app_data.csv
 expenseDB.json
+.DS_STORE

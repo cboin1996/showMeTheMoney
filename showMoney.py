@@ -520,6 +520,18 @@ if __name__ == "__main__":
             exp_dtypes=env.CIBC_EXP_DTYPES,
             inc_dtypes=env.CIBC_INC_DTYPES
         )
+    elif bank_sel_json[env.BANK_SELECTION_KEY] == env.BMO:
+        bankconfig = util.Bankconfig(
+            settings_path = settings_path,
+            strip_cols = [env.BANK_STORENAME],
+            check_for_dups_cols = env.BMO_CHECK_FOR_DUPLICATES_COL_NAMES,
+            regex_str = env.RE_EXPR_BMO,
+            ignorable_transactions = env.BMO_IGNORABLE_TRANSACTIONS,
+            exp_colnames = env.BMO_EXPENSE_COLNAMES, 
+            inc_colnames = env.BMO_INCOME_COLNAMES,
+            exp_dtypes=env.BMO_EXP_DTYPES,
+            inc_dtypes=env.BMO_INC_DTYPES
+        )
 
 
     initialize_csvs([exp_recbin_path, inc_recbin_path], 
