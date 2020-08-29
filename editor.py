@@ -590,14 +590,17 @@ def edit_settings(settings_path):
     prompt = "Please select a setting to edit: "
     while not done:
         settings = data_help.read_jsonFile(settings_path)
-        setting_sels = util.select_indices_of_list(prompt, list(settings.keys()), return_matches=True, abortchar=True, print_lst=True)
-        for setting in setting_sels:
-            data_type = type(settings[setting])
-            value = util.get_input_given_type(f"Enter your '{data_type}' for {setting}={settings[setting]}. ", data_type, abortchar='q')
-            if value is not None: # none type returned upon quit
-                settings[setting] = value
-                done = True
-                data_help.write_to_jsonFile(settings_path, settings)
+        setting_sels = util.select_indices_of_list(prompt, list(settings.keys()), return_matches=True, abortchar='q', print_lst=True)
+        if setting_sels is not None:
+            for setting in setting_sels:
+                data_type = type(settings[setting])
+                value = util.get_input_given_type(f"Enter your '{data_type}' for {setting}={settings[setting]}. ", data_type, abortchar='q')
+                if value is not None: # none type returned upon quit
+                    settings[setting] = value
+                    done = True
+                    data_help.write_to_jsonFile(settings_path, settings)
+        else:
+            done = True
 
 def edit_df_entries(df, df_path, column_name, old_entry, new_entry):
     """

@@ -54,7 +54,11 @@ def load_and_process_csvs(file_paths, strip_cols=None, data_type=None):
     """
     dfs_in = []
     for fpath in file_paths:
-        df = pd.read_csv(fpath, header=None)
+        if data_type == env.CIBC:
+            df = pd.read_csv(fpath, header=None)
+        else:
+            df = pd.read_csv(fpath, header=0, skiprows=9)
+
         # scotia credit cards have 3 cols, debit has more.
         if len(df.columns) == 3 and data_type == env.SCOTIABANK:
             df.columns = env.SB_BASE_CREDIT_COLNAMES
@@ -67,11 +71,21 @@ def load_and_process_csvs(file_paths, strip_cols=None, data_type=None):
             
         elif len(df.columns) == 4 and data_type == env.CIBC:
             df.columns = env.CIBC_BASE_COLNAMES
+
         elif len(df.columns) == 5 and data_type == env.CIBC:
             df.columns = env.CIBC_CREDIT_COLNAMES
-            df.drop(columns=[env.CIBC_CARD_NUM_COL])
+            df.drop(columns=[env.CIBC_CARD_NUM_COL], inplace=True)
+        
+        elif len(df.columns) == 5 and data_type == env.BMO:
+            df.columns = env.BMO_DEBIT_COLNAMES
+            df.drop(columns=[env.NULL], inplace=True)
+            df[env.DATE] = pd.to_datetime(df[env.DATE], format=env.BMO_DATE_FORMAT)
 
 
+        elif len(df.columns) == 6 and data_type == env.BMO:
+            df.columns = env.BMO_CREDIT_COLNAMES
+            df.drop(columns=[env.NULL, env.BMO_CARDNUM_COL, env.BMO_ITEMNUM_COL], inplace=True)
+            df[env.DATE] = pd.to_datetime(df[env.DATE], format=env.BMO_DATE_FORMAT)
         dfs_in.append(df)
 
     df_out = pd.concat(dfs_in)
@@ -182,7 +196,8 @@ def filter_by_amnt(df, col_name, col_name2=None, bank_name=None):
     Takes a dataframe with positive and negative dollara mounts, and returns two frames: 
         one with pos and one with neg.. where the negs are set to positive.
     """
-    if bank_name == env.SCOTIABANK:
+    if bank_name == env.SCOTIABANK or bank_name == env.BMO:
+        print(df)
         inc_df = df[df[col_name] > 0].copy()
         exp_df = df[df[col_name] < 0].copy()
         exp_df.loc[:, col_name] = exp_df[col_name].abs()
@@ -193,6 +208,8 @@ def filter_by_amnt(df, col_name, col_name2=None, bank_name=None):
 
         exp_df = df[df[col_name].notna()]
         exp_df.drop(columns=[col_name2], inplace=True)
+    
+
     return inc_df, exp_df
 
 

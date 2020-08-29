@@ -68,8 +68,26 @@ CIBC_EXP_DTYPES = {DATE: 'str', AMOUNT: 'float', ADJUSTMENT: 'float',
                   BANK_STORENAME: "str", FILT_STORENAME: "str", EXPENSE: 'str', EXP_UUID: "str", INC_UUID: "str"}
 CIBC_INC_DTYPES = {DATE: 'str', AMOUNT: 'float', ADJUSTMENT: 'float',
                    BANK_STORENAME: "str", INC_UUID: "str", EXP_UUID: "str"}
+
+# BMO
+BMO_CARDNUM_COL = 'BMO_CARDNUM'
+BMO_ITEMNUM_COL = "Item No."
+BMO_DEBIT_COLNAMES = [NULL, TYPE, DATE, AMOUNT, BANK_STORENAME]
+BMO_EXPENSE_COLNAMES = [TYPE, DATE, AMOUNT, ADJUSTMENT, BANK_STORENAME, 
+                         EXPENSE, EXP_UUID, INC_UUID]
+BMO_INCOME_COLNAMES = [TYPE, DATE, AMOUNT, ADJUSTMENT, BANK_STORENAME, INC_UUID, EXP_UUID]
+BMO_CREDIT_COLNAMES = [BMO_ITEMNUM_COL, BMO_CARDNUM_COL, DATE, NULL, AMOUNT, BANK_STORENAME]
+BMO_CHECK_FOR_DUPLICATES_COL_NAMES = [DATE, AMOUNT, BANK_STORENAME]
+BMO = 'BMO'
+BMO_IGNORABLE_TRANSACTIONS = ['TRSF FROM', 'CW TF']
+BMO_EXP_DTYPES = {DATE: 'str', AMOUNT: 'float', ADJUSTMENT: 'float',
+                  BANK_STORENAME: "str", FILT_STORENAME: "str", EXPENSE: 'str', EXP_UUID: "str", INC_UUID: "str"}
+BMO_INC_DTYPES = {DATE: 'str', AMOUNT: 'float', ADJUSTMENT: 'float',
+                   BANK_STORENAME: "str", INC_UUID: "str", EXP_UUID: "str"}
+
+BMO_DATE_FORMAT = "%Y%m%d"
 # Bank Database Options
-BANK_OPTIONS = [SCOTIABANK, CIBC]
+BANK_OPTIONS = [SCOTIABANK, CIBC, BMO]
 BANK_CHOICES_KEY = "bank choices"
 BANK_SELECTION_KEY = 'bank choice'
 
@@ -118,6 +136,12 @@ RE_EXPR_CIBC = re.compile(
     r'((?<=(Internet Banking) )(.+?)(?=\d+\s\s))'
     r'|((?<=(Electronic Funds Transfer))(.*))'
     r'|((.*)(?=#))'
+)
+
+RE_EXPR_BMO = re.compile(
+    r'((?<=(\[CW\]|\[PR\]|\[DN\]))(.*)(?=(SENT|RECVD)))'
+    r'|((?<=(\[CW\]|\[PR\]|\[DN\]))(.*)(?=#))'
+    r'|((?<=(\[CW\]|\[PR\]|\[DN\]))(.*))'
 )
 
 OUT_EXP_DATA_TEMPL = "exp_db.csv"
