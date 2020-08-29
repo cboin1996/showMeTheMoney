@@ -111,7 +111,7 @@ def drop_for_substring(df, col_name, lst_of_substrs, str_out=''):
 def drop_rows(prompt, df):
     util.print_fulldf(df)
     rows = util.select_indices_of_list(prompt, list(
-        df.index), abortable=True, abortchar='q', print_lst=False)
+        df.index), abortchar='q', print_lst=False)
     if rows is not None:  # above returns none if user aborts
         df.drop(index=rows, inplace=True)
         return df
