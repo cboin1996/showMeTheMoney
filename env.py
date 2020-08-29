@@ -3,7 +3,7 @@ import re
 import pandas as pd
 
 
-VERSION = "1.40a"
+VERSION = "1.5"
 """
 Dataframe Headers
 """
