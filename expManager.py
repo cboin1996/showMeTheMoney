@@ -27,7 +27,7 @@ def setup_expense_names(exp_path: str):
         exp_list[env.EXPENSE_DATA_KEY].append(env.EXPENSE_MISC_STR)
         data_help.write_to_jsonFile(exp_path, exp_list)
 
-    elif env.EXPENSES_SUBTRACTED_KEY not in exp_list.keys():
+    if env.EXPENSES_SUBTRACTED_KEY not in exp_list.keys():
         exp_list[env.EXPENSES_SUBTRACTED_KEY] = []
         data_help.write_to_jsonFile(exp_path, exp_list)
 

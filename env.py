@@ -121,6 +121,7 @@ RE_EXPR_CIBC = re.compile(
 )
 
 OUT_EXP_DATA_TEMPL = "exp_db.csv"
+OUT_EXPREC_DATA_TEMPL = "exp_recbin.csv"
 OUT_INC_DATA_TEMPL = "inc_db.csv"
 OUT_DATA_CHKSZ = 3
 csv = "*.csv"

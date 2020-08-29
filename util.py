@@ -166,8 +166,17 @@ def select_from_list(lst, prompt, abortchar=None, ret_match=False, print_lst=Tru
         user_sel = lst[user_sel]
     return user_sel 
 
+def print_sorted_dict(dct, keys_list, print_vals=False, print_children=False):
+    for idx, key in enumerate(keys_list):
+        output = f"[{idx}] - {key}"
+        if print_vals == True:
+            output = output +  f": {dct[key]}"
+        print(output)
+        
+        if print_children == True:
+            print_simple_dict(dct[key])
 
-def select_dict_key_using_integer(dct, prompt, print_children=True, quit_str='', print_aborting=True):
+def select_dict_key_using_integer(dct, prompt, print_children=True, quit_str='', print_aborting=True, print_vals=False):
     """
     Returns a key from the dictionary that a user selects using an integer index. Funny eh?
     params:
@@ -177,10 +186,7 @@ def select_dict_key_using_integer(dct, prompt, print_children=True, quit_str='',
     """
     keys_list = list(dct.keys())
     keys_list.sort()
-    for idx, key in enumerate(keys_list):
-        print(f"[{idx}] - {key}")
-        if print_children == True:
-            print_simple_dict(dct[key])
+    print_sorted_dict(dct, keys_list, print_vals=print_vals, print_children=print_children)
     
     flag = False
     while not flag:
@@ -201,13 +207,54 @@ def select_dict_key_using_integer(dct, prompt, print_children=True, quit_str='',
 
     return keys_list[user_sel]
 
-def print_simple_dict(dct):
+def select_dict_keys_using_integer(dct, prompt, print_children=True, quit_str='', print_aborting=True, print_vals=False):
+    """
+    Returns a key from the dictionary that a user selects using an integer index. Funny eh?
+    params:
+        dct: the dictionary to select from
+        print_children: optional param for printed nested children in a dict
+        quit_str: an optional str for having the user abort a selection process
+    """    
+    keys_list = list(dct.keys())
+    keys_list.sort()
+    print_sorted_dict(dct, keys_list, print_vals=print_vals, print_children=print_children)
+    selection_list = []
+    
+    flag = False
+    while not flag:
+        try:
+            user_sels = format_input_to_list(prompt, 'integer', quit_str=quit_str)
+            if user_sels == None:
+                if print_aborting == True:
+                    print("Aborting.")
+                return
+          
+            for i, sel in enumerate(user_sels):          
+                if sel > len(dct) - 1 or sel < 0:
+                    print(f"Please input numbers between 0 and {len(dct) - 1}")
+                    flag = False
+                    break
+
+                else:
+                    selection_list.append(keys_list[int(sel)])
+                    flag = True
+                        
+        
+        except ValueError:
+            print("Please input integers!")
+            flag = False
+
+    return selection_list
+def print_simple_dict(dct, print_vals=False):
     """
     Prints key value pairs for a dict
     """
     i = 0
     for k, v in dct.items():
-        print(f"\t[{i}] {k} : {v}")
+        output = f"\t[{i}] {k} "
+        if print_vals == True:
+            output = output + ": {v}"
+        print(output)
         i += 1
 
 def print_nested_dict(dct):
@@ -242,7 +289,7 @@ def prompt_with_warning(prompt, ret_lowercase=True):
     
     return user_in
 
-def format_input_to_list(prompt, mode='string'):
+def format_input_to_list(prompt, mode='string', quit_str=None):
     """
     Used for getting the words in a list and verifying they are all strings
     params:
@@ -252,8 +299,13 @@ def format_input_to_list(prompt, mode='string'):
     flag = False
     lst = []
     while not flag:
-        prompt += f"Expecting '{mode}' vals in format e.g. (val1 val2 val3): "
+        prompt += f"\nExpecting '{mode}' vals in format e.g. (v1 v2 v3). "
+        if quit_str is not None:
+            prompt += f"'{quit_str}' aborts: "
         user_in = input(prompt)
+        if user_in == quit_str:
+            print("Aborting.")
+            return
         if mode == 'integer':
             match = re.search(r"[\d\s]+", user_in) 
         elif mode == 'string':
@@ -292,7 +344,7 @@ def select_item_not_in_list(prompt, lst, ignorecase=True, abortchar=None):
     
     return user_in
 
-def select_indices_of_list(prompt='', list_to_compare_to=[], return_matches=False, abortable=False, abortchar=None, print_lst=True):
+def select_indices_of_list(prompt='', list_to_compare_to=[], return_matches=False, abortchar=None, print_lst=True):
     """
     Gets user input for certain elements of a list
     params:
@@ -303,33 +355,34 @@ def select_indices_of_list(prompt='', list_to_compare_to=[], return_matches=Fals
         one of: the list of matches selected by the user, the indices of the list selected, or None if aborted.
     """
     success = False
+    selections = []
     if print_lst == True:
         print_lst_with_index(list_to_compare_to)
-    while True:
-        user_input = input(prompt + " (e.g. 1 2 3): ")
-        user_input = user_input.split(' ')
-        for i, char in enumerate(user_input): # validate each character
-            try:
-                if abortable == True and char == abortchar:
-                    print("Aborting process.")
-                    return None
-                if int(char) < len(list_to_compare_to) and int(char) >= 0:
-                    user_input[i] = int(user_input[i])
+    while success == False:
+        try:
+            user_input = format_input_to_list(prompt, mode='integer', quit_str=abortchar)
+            if user_input == None:
+                print("Aborting.")
+                return None
+            
+            for i, integer in enumerate(user_input): # validate each character
+                if integer < len(list_to_compare_to) and integer >= 0:
+                    selections.append(integer)
                     success = True
 
                 else:
                     print("Numbers must be 0 or more and less than %s"%(len(list_to_compare_to)-1))
                     success = False
+                    break
 
-            except ValueError:
-                print("Must enter numbers separated by a single space")
-                success = False
-                break
+        except ValueError:
+            print("Must enter numbers separated by a single space")
+            success = False
         # this will not get reached unless successful trancsription
-        if success == True and return_matches == False:
-            return user_input
+        if return_matches == False:
+            return selections
         if success == True and return_matches == True:
-            return [list_to_compare_to[idx] for idx in user_input]
+            return [list_to_compare_to[idx] for idx in selections]
 
 def print_lst_with_index(lst):
     for idx, item in enumerate(lst):
@@ -388,7 +441,7 @@ def get_editable_input(prompt, editable):
     return user_in
 
 def edit_list_in_dict(prompt, options, dct, key, dct_path, add=True):
-    items = select_indices_of_list(prompt, list_to_compare_to=options, return_matches=True, abortable=True, abortchar='q')
+    items = select_indices_of_list(prompt, list_to_compare_to=options, return_matches=True, abortchar='q')
     if items is not None:
         if add == True:
             for item in items:
@@ -412,7 +465,7 @@ def get_input_given_type(prompt, data_type, abortchar='q'):
                 user_in = input(prompt)
             if user_in == 'q':
                 print("Aborting.")
-
+                return
             user_in = data_type(user_in)
             if type(user_in) is not data_type:
                 print(f"Please input '{data_type}' for this entry!")
