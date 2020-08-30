@@ -38,10 +38,10 @@ def choose_bank(json_path: str):
     """
     bank_json = data_help.read_jsonFile(json_path)
     if env.BANK_SELECTION_KEY not in bank_json.keys():
-        prompt = f"Please choose your bank from the list of banks: "
-        choice = util.select_from_list(
-            env.BANK_OPTIONS, prompt, ret_match=True)
-        bank_json[env.BANK_SELECTION_KEY] = choice
+        prompt = f"Please choose your bank(s) from the list of banks: "
+        choices = util.select_indices_of_list(prompt,
+            env.BANK_OPTIONS, return_matches=True)
+        bank_json[env.BANK_SELECTION_KEY] = choices
         bank_json[env.BANK_CHOICES_KEY] = env.BANK_OPTIONS
         data_help.write_to_jsonFile(json_path, bank_json)
 
@@ -143,7 +143,7 @@ def get_budgets(budg_path, exp_path, dates=None):
     return
 
 
-def get_expenses_for_rows(df, stor_exp_data_path, stor_data_path, budg_path, bankconfig, bank_name):
+def get_expenses_for_rows(df, stor_exp_data_path, stor_data_path, budg_path, bankconfig):
     """
     Gets the expense data for stores, prompting the user when multiple expenses exist for a store
     params:
@@ -176,18 +176,13 @@ def get_expenses_for_rows(df, stor_exp_data_path, stor_data_path, budg_path, ban
                     else:
                         print(f"Unable to filter - {row[env.BANK_STORENAME]}")
                         storename = row[env.BANK_STORENAME]
-
-                elif bank_name == env.SCOTIABANK:  # cqtch the NaN case, scotia includes type column with data
-                    query = row[env.TYPE].lower()
-                    print(query)
-                    storename = query
                 
                 else: # default case use empty str
                     print("No storename exists for this transaction.")
                     storename = ""
 
-                print("Curr Transaction:  %-10s | %-10s | %-10s " %
-                      (row[env.DATE], row[env.AMOUNT], storename))
+                print("Curr Transaction:  %-10s | %-10s | %-10s | %-10s " %
+                      (row[env.DATE], row[env.AMOUNT], storename, row[env.TYPE]))
                 selected_exp, exp_stor_db, stor_db, storename = search_store_relationships(storename, exp_stor_db, budg_db[month_end_date],
                                                                                            stor_exp_data_path, stor_db, stor_data_path)
                 df.at[idx, env.FILT_STORENAME] = storename

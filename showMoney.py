@@ -88,16 +88,14 @@ def check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adat
     if len(ndata_filepaths) == 0:
         return False
 
-    bank_sel_json = data_help.read_jsonFile(bankconfig.settings_path)
-
     if len(ndata_filepaths) != 0 and len(db_exp_data_fpaths) != 0 and len(db_inc_data_fpaths) != 0:
         df_new = data_help.load_and_process_csvs(file_paths=ndata_filepaths, strip_cols=bankconfig.strip_cols,
-                                                 data_type=bank_sel_json[env.BANK_SELECTION_KEY])
+                                                 data_type=bankconfig.selection)
         util.print_fulldf(df_new)
 
         
         df_inc_new, df_exp_new = data_help.filter_by_amnt(df_new, col_name=env.AMOUNT, col_name2=env.NULL, 
-                                                          bank_name=bank_sel_json[env.BANK_SELECTION_KEY])
+                                                          bank_name=bankconfig.selection)
         df_inc_new = data_help.add_columns(
             df_inc_new, [env.ADJUSTMENT, env.INC_UUID, env.EXP_UUID])
 
@@ -112,9 +110,9 @@ def check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adat
 
     elif len(ndata_filepaths) != 0:
         df_new = data_help.load_and_process_csvs(file_paths=ndata_filepaths, strip_cols=bankconfig.strip_cols,
-                                                 data_type=bank_sel_json[env.BANK_SELECTION_KEY])
+                                                 data_type=bankconfig.selection)
         df_inc, df_exp = data_help.filter_by_amnt(
-            df_new, col_name=env.AMOUNT, col_name2=env.NULL, bank_name=bank_sel_json[env.BANK_SELECTION_KEY])
+            df_new, col_name=env.AMOUNT, col_name2=env.NULL, bank_name=bankconfig.selection)
         df_inc_new = data_help.add_columns(df_inc, [env.ADJUSTMENT, env.INC_UUID, env.EXP_UUID])
 
         df_exp_new = data_help.add_columns(df_exp, [env.FILT_STORENAME, env.EXPENSE, env.ADJUSTMENT, 
@@ -224,7 +222,6 @@ def get_expenses(db_exp_data_fpaths: list, db_inc_data_fpaths: list, stor_pair_p
     main method for the importing of expense data
     """
     bank_json = data_help.read_jsonFile(bankconfig.settings_path)
-    bank_name = bank_json[env.BANK_SELECTION_KEY]
     exp_df = data_help.load_csvs(db_exp_data_fpaths, dtype=bankconfig.exp_dtypes,
                                  parse_dates=env.pdates_colname)  # only using on csv db for now. newest will be last? idk verify later.
 
@@ -234,7 +231,7 @@ def get_expenses(db_exp_data_fpaths: list, db_inc_data_fpaths: list, stor_pair_p
     # check for any missing budgets either this month or any month in the data
     expManager.get_budgets(budg_path, exp_path, dates)
     exp_df = expManager.get_expenses_for_rows(exp_df, stor_exp_data_path, 
-                                              stor_pair_path, budg_path, bankconfig, bank_name)
+                                              stor_pair_path, budg_path, bankconfig)
     print("\nFinished gathering your expense data: \n")
     util.print_fulldf(exp_df, dont_print_cols)
     data_help.write_data(exp_df, db_exp_data_fpaths[0])
@@ -509,44 +506,8 @@ if __name__ == "__main__":
     initialize_settings(settings_path)
 
     bank_sel_json = data_help.read_jsonFile(settings_path)
-    if bank_sel_json[env.BANK_SELECTION_KEY] == env.SCOTIABANK:
-        bankconfig = util.Bankconfig(
-            settings_path = settings_path,
-            strip_cols = [env.TYPE, env.BANK_STORENAME],
-            check_for_dups_cols = env.CHECK_FOR_DUPLICATES_COL_NAMES,
-            regex_str = env.RE_EXPR,
-            ignorable_transactions = env.SCOTIA_IGNORABLE_TRANSACTIONS,
-            exp_colnames = env.COLUMN_NAMES,
-            inc_colnames = env.SB_INC_COLNAMES,
-            exp_dtypes=env.SCOTIA_EXP_DTYPES,
-            inc_dtypes=env.SCOTIA_INC_DTYPES
-        )
 
-    elif bank_sel_json[env.BANK_SELECTION_KEY] == env.CIBC:
-        bankconfig = util.Bankconfig(
-            settings_path = settings_path,
-            strip_cols = [env.BANK_STORENAME],
-            check_for_dups_cols = env.CIBC_CHECK_FOR_DUPLICATES_COL_NAMES,
-            regex_str = env.RE_EXPR_CIBC,
-            ignorable_transactions = env.CIBC_IGNORABLE_TRANSACTIONS,
-            exp_colnames = env.CIBC_EXPENSE_COLNAMES, 
-            inc_colnames = env.CIBC_INCOME_COLNAMES,
-            exp_dtypes=env.CIBC_EXP_DTYPES,
-            inc_dtypes=env.CIBC_INC_DTYPES
-        )
-    elif bank_sel_json[env.BANK_SELECTION_KEY] == env.BMO:
-        bankconfig = util.Bankconfig(
-            settings_path = settings_path,
-            strip_cols = [env.BANK_STORENAME],
-            check_for_dups_cols = env.BMO_CHECK_FOR_DUPLICATES_COL_NAMES,
-            regex_str = env.RE_EXPR_BMO,
-            ignorable_transactions = env.BMO_IGNORABLE_TRANSACTIONS,
-            exp_colnames = env.BMO_EXPENSE_COLNAMES, 
-            inc_colnames = env.BMO_INCOME_COLNAMES,
-            exp_dtypes=env.BMO_EXP_DTYPES,
-            inc_dtypes=env.BMO_INC_DTYPES
-        )
-
+    bankconfig = util.get_bank_conf(bank_sel_json, settings_path)
 
     initialize_csvs([exp_recbin_path, inc_recbin_path], 
                     [bankconfig.exp_colnames, bankconfig.inc_colnames])
@@ -555,6 +516,8 @@ if __name__ == "__main__":
     print(f"--- --- --- --- --- V. {env.VERSION} --- --- --- --- --- ---")
     print("WELCOME TO SHOW ME YOUR MONEYYYYY COME ON DOWN!")
     quit = False
+    index = 0
+    bankconfigreloaded = bankconfig
     while not quit:
         print("          ----|$$| MAIN MENU |$$|----         ")
         user_in = util.get_user_input_for_chars(
@@ -568,19 +531,23 @@ if __name__ == "__main__":
 
             if user_in == 'i':
                 backup_data([db_data_path, lib_data_path], backup_folderpath)
-                if check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adata_path,
-                                  db_exp_data_path, db_inc_data_path, exp_recbin_path, inc_recbin_path, 
-                                  bankconfig):
-                    ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths = find_data_paths(
-                        ndata_path, adata_path, db_exp_data_path, db_inc_data_path, output_str="RECHECKING FILES")
-                    get_income(db_inc_data_fpaths, bankconfig=bankconfig)
-                    get_expenses(db_exp_data_fpaths, db_inc_data_fpaths,
-                                 stor_pair_path, stor_exp_data_path, budg_path, 
-                                 exp_path, bankconfig=bankconfig)
+                if index > 0: # reload bank config after first iteration.
+                    bankconfigreloaded = util.get_bank_conf(bank_sel_json, settings_path, abortchar='q')
+                if bankconfigreloaded is not None: # check for None type aborts.
+                    bankconfig = bankconfigreloaded
+                    if check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adata_path,
+                                    db_exp_data_path, db_inc_data_path, exp_recbin_path, inc_recbin_path, 
+                                    bankconfig):
+                        ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths = find_data_paths(
+                            ndata_path, adata_path, db_exp_data_path, db_inc_data_path, output_str="RECHECKING FILES")
+                        get_income(db_inc_data_fpaths, bankconfig=bankconfig)
+                        get_expenses(db_exp_data_fpaths, db_inc_data_fpaths,
+                                    stor_pair_path, stor_exp_data_path, budg_path, 
+                                    exp_path, bankconfig=bankconfig)
 
-                else:
-                    print(
-                        f"No data found. Please place files in {ndata_path} so I can eat.")
+                    else:
+                        print(
+                            f"No data found. Please place files in {ndata_path} so I can eat.")
 
             # if import wasnt selected and there is no data csv's to load... skip running the program functions and warn user
             elif len(db_exp_data_fpaths) != 0:
@@ -609,6 +576,8 @@ if __name__ == "__main__":
             print("Gone so soon? Ill be here if you need me. Goodby-")
             print("Transmission Terminated.")
             quit = True
+        
+        index += 1
 
 
 # data_help.gather_store_db(df, os.path.join(sys.path[0], 'exp_stor_db.json'), 'StoreName', 'ExpenseName')

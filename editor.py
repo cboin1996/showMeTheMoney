@@ -593,12 +593,18 @@ def edit_settings(settings_path):
         setting_sels = util.select_indices_of_list(prompt, list(settings.keys()), return_matches=True, abortchar='q', print_lst=True)
         if setting_sels is not None:
             for setting in setting_sels:
-                data_type = type(settings[setting])
-                value = util.get_input_given_type(f"Enter your '{data_type}' for {setting}={settings[setting]}. ", data_type, abortchar='q')
+                if setting == env.BANK_SELECTION_KEY:
+                    value = util.select_indices_of_list("Please select from the list: ", settings[env.BANK_CHOICES_KEY], 
+                        return_matches=True, abortchar='q')
+                else:
+                    data_type = type(settings[setting])
+                    value = util.get_input_given_type(f"Enter your '{data_type}' for {setting}={settings[setting]}. ", 
+                        data_type, abortchar='q', setting=settings[setting])
                 if value is not None: # none type returned upon quit
                     settings[setting] = value
                     done = True
                     data_help.write_to_jsonFile(settings_path, settings)
+                
         else:
             done = True
 

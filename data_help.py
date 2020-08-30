@@ -54,7 +54,10 @@ def load_and_process_csvs(file_paths, strip_cols=None, data_type=None):
     """
     dfs_in = []
     for fpath in file_paths:
-        if data_type == env.CIBC or data_type == env.SCOTIABANK:
+        if data_type == env.RBC:
+            df = pd.read_csv(fpath, header=None, skiprows=1)
+
+        elif data_type != env.BMO:
             df = pd.read_csv(fpath, header=None)
         else:
             df = pd.read_csv(fpath, header=0, skiprows=9)
@@ -67,6 +70,7 @@ def load_and_process_csvs(file_paths, strip_cols=None, data_type=None):
         
         elif data_type == env.SCOTIABANK and len(df.columns) == 5:
             df.columns = env.SB_BASE_DEBIT_COLNAMES
+            df.loc[df[env.BANK_STORENAME].isnull(),env.BANK_STORENAME] = df[env.TYPE]
             df.drop(columns=[env.NULL], inplace=True)
             
         elif len(df.columns) == 4 and data_type == env.CIBC:
@@ -86,6 +90,13 @@ def load_and_process_csvs(file_paths, strip_cols=None, data_type=None):
             df.columns = env.BMO_CREDIT_COLNAMES
             df.drop(columns=[env.NULL, env.BMO_CARDNUM_COL, env.BMO_ITEMNUM_COL], inplace=True)
             df[env.DATE] = pd.to_datetime(df[env.DATE], format=env.BMO_DATE_FORMAT)
+        
+        elif len(df.columns) == 9 and data_type == env.RBC:
+            df.columns = env.RBC_DEBIT_COLNAMES
+            df.loc[df[env.BANK_STORENAME].isnull(),env.BANK_STORENAME] = df[env.TYPE]
+            df.drop(columns=[env.NULL, env.RBC_ACC_NO, env.RBC_ACC_TYPE,
+                env.RBC_USD, env.RBC_INVIS], inplace=True)
+
         dfs_in.append(df)
 
     df_out = pd.concat(dfs_in)
@@ -197,7 +208,7 @@ def filter_by_amnt(df, col_name, col_name2=None, bank_name=None):
     Takes a dataframe with positive and negative dollara mounts, and returns two frames: 
         one with pos and one with neg.. where the negs are set to positive.
     """
-    if bank_name == env.SCOTIABANK or bank_name == env.BMO:
+    if bank_name == env.SCOTIABANK or bank_name == env.BMO or bank_name == env.RBC:
         inc_df = df[df[col_name] > 0].copy()
         exp_df = df[df[col_name] < 0].copy()
         exp_df.loc[:, col_name] = exp_df[col_name].abs()

@@ -86,10 +86,29 @@ BMO_INC_DTYPES = {DATE: 'str', AMOUNT: 'float', ADJUSTMENT: 'float',
                    BANK_STORENAME: "str", INC_UUID: "str", EXP_UUID: "str"}
 
 BMO_DATE_FORMAT = "%Y%m%d"
+
+# RBC
+RBC_ACC_NO = "Account No."
+RBC_ACC_TYPE = "Account Type"
+RBC_USD = "USD"
+RBC_INVIS = "Invisible"
+RBC_DEBIT_COLNAMES = [RBC_ACC_TYPE, RBC_ACC_NO, DATE, NULL, TYPE, BANK_STORENAME, AMOUNT, RBC_USD, RBC_INVIS]
+RBC_EXPENSE_COLNAMES = [DATE, TYPE, BANK_STORENAME, AMOUNT, ADJUSTMENT, 
+                         EXPENSE, EXP_UUID, INC_UUID]
+RBC_INCOME_COLNAMES = [DATE, TYPE, BANK_STORENAME, AMOUNT, ADJUSTMENT, INC_UUID, EXP_UUID]
+RBC_CREDIT_COLNAMES = RBC_DEBIT_COLNAMES
+
+RBC_CHECK_FOR_DUPLICATES_COL_NAMES = [DATE, AMOUNT, BANK_STORENAME]
+RBC = 'RBC'
+RBC_IGNORABLE_TRANSACTIONS = ['DDA -', 'WWW']
+RBC_EXP_DTYPES = {DATE: 'str', AMOUNT: 'float', ADJUSTMENT: 'float',
+                  BANK_STORENAME: "str", FILT_STORENAME: "str", EXPENSE: 'str', EXP_UUID: "str", INC_UUID: "str"}
+RBC_INC_DTYPES = {DATE: 'str', AMOUNT: 'float', ADJUSTMENT: 'float',
+                   BANK_STORENAME: "str", INC_UUID: "str", EXP_UUID: "str"}
 # Bank Database Options
-BANK_OPTIONS = [SCOTIABANK, CIBC, BMO]
-BANK_CHOICES_KEY = "bank choices"
-BANK_SELECTION_KEY = 'bank choice'
+BANK_OPTIONS = [SCOTIABANK, CIBC, BMO, RBC]
+BANK_CHOICES_KEY = "bank options"
+BANK_SELECTION_KEY = 'bank selections'
 
 # Common Across bank Dataframe Types
 pdates_colname = [DATE]
@@ -144,6 +163,12 @@ RE_EXPR_BMO = re.compile(
     r'|((?<=(\[CW\]|\[PR\]|\[DN\]))(.*))'
 )
 
+RE_EXPR_RBC = re.compile(
+    r'((.*)(?=\s\-\s\d+))'
+    r'|((.*)(?=\-\s\d+))'
+    r'|((.*)(?=#))'
+)
+
 OUT_EXP_DATA_TEMPL = "exp_db.csv"
 OUT_EXPREC_DATA_TEMPL = "exp_recbin.csv"
 OUT_INC_DATA_TEMPL = "inc_db.csv"
@@ -161,7 +186,7 @@ SETTINGS_KEYS = [PLOT_SIZE_KEY, # used for initializing settings keys in setting
                 NUM_COLS_KEY,
                 ]
 SETTINGS_TEMPL = {
-                    BANK_CHOICES_KEY: BANK_OPTIONS,
+                    BANK_CHOICES_KEY: [BANK_OPTIONS],
                     PLOT_SIZE_KEY: PLOT_SIZE_DEFAULT,
                     NUM_ROWS_KEY: NUM_ROWS_DEFAULT,
                     NUM_COLS_KEY: NUM_COLS_DEFAULT,       
