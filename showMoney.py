@@ -102,8 +102,8 @@ def check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adat
                                                         env.ADJUSTMENT, env.EXP_UUID, 
                                                         env.INC_UUID])
 
-        df_exp = data_help.load_csvs(file_paths=db_exp_data_fpaths, strip_cols=bankconfig.strip_cols)
-        df_inc = data_help.load_csvs(file_paths=db_inc_data_fpaths, strip_cols=bankconfig.strip_cols)
+        df_exp = data_help.load_csvs(file_paths=db_exp_data_fpaths, strip_cols=bankconfig.strip_cols, dtype=bankconfig.exp_dtypes)
+        df_inc = data_help.load_csvs(file_paths=db_inc_data_fpaths, strip_cols=bankconfig.strip_cols, dtype=bankconfig.inc_dtypes)
 
         df_exp = pd.concat([df_exp, df_exp_new])
         df_inc = pd.concat([df_inc, df_inc_new])
@@ -121,10 +121,10 @@ def check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adat
     else:
         return False
 
-    df_exp_recbin = data_help.load_csv(
-        exp_recbin_path, dtype=bankconfig.exp_dtypes, parse_dates=env.pdates_colname)
-    df_inc_recbin = data_help.load_csv(
-        inc_recbin_path, dtype=bankconfig.inc_dtypes, parse_dates=env.pdates_colname)
+    df_exp_recbin = data_help.load_csvs(
+        [exp_recbin_path], dtype=bankconfig.exp_dtypes, parse_dates=env.pdates_colname)
+    df_inc_recbin = data_help.load_csvs(
+        [inc_recbin_path], dtype=bankconfig.inc_dtypes, parse_dates=env.pdates_colname)
     print("New data loaded locally.")
     print(f"INCOME\n\n{df_inc}\n\nYOUR IGNORED INCOME\n\n{df_inc_recbin}\n\nEXPENSES\n\n{df_exp}\n\nYOUR IGNORED EXPENSES\n\n{df_exp_recbin}\n")
     df_exp = data_help.drop_dups(

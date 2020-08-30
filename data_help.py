@@ -149,10 +149,11 @@ def drop_dups(df, col_names, ignore_index=False):
 def remove_subframe(df_to_remove_from, df_to_remove, col_names):
     """
     Used to drop the a dataframe from within another
+    Adding df_to_remove twice guarantees removal.
     """
-    df = pd.concat([df_to_remove_from, df_to_remove])
+    df = pd.concat([df_to_remove_from, df_to_remove, df_to_remove])
     df[env.DATE] = pd.to_datetime(df[env.DATE])
-    df.drop_duplicates(keep=False, inplace=True, subset=col_names)
+    df.drop_duplicates(keep=False, inplace=True, subset=col_names, ignore_index=True)
 
     return df
 
