@@ -54,7 +54,7 @@ def load_and_process_csvs(file_paths, strip_cols=None, data_type=None):
     """
     dfs_in = []
     for fpath in file_paths:
-        if data_type == env.CIBC:
+        if data_type == env.CIBC or data_type == env.SCOTIABANK:
             df = pd.read_csv(fpath, header=None)
         else:
             df = pd.read_csv(fpath, header=0, skiprows=9)

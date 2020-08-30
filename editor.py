@@ -666,8 +666,8 @@ def change_budget_amounts(budg_data, budg_path):
         if dates is not None: # none type returned if user aborts
             for date in dates:
                 print(f"--- Editing {date} ---")
-                util.print_simple_dict(budg_data[date])
-                expenses = util.select_indices_of_list("Select an expense(s). ", list(budg_data[date].keys()), return_matches=True, abortchar='q', print_lst=False)
+                expenses = util.select_dict_keys_using_integer(budg_data[date], "Select the expenses you wish to change: ", 
+                    print_children=False, quit_str='q', print_vals=True)
                 if expenses is not None: # quit if user says so.
                     for exp in expenses:
                         amnt = util.get_float_input(f"Enter the new amount for '{exp}': ", force_pos=True, roundto=2)
