@@ -7,6 +7,8 @@ import data_help
 
 import expManager
 
+import env
+
 class Bankconfig:
     """
     Class for carrying the bank's configuration settings
@@ -28,7 +30,8 @@ class Bankconfig:
                 exp_colnames,
                 inc_colnames,
                 exp_dtypes,
-                inc_dtypes):
+                inc_dtypes,
+                selection):
         self.settings_path = settings_path
         self.strip_cols = strip_cols
         self.check_for_dups_cols = check_for_dups_cols
@@ -38,6 +41,70 @@ class Bankconfig:
         self.inc_colnames = inc_colnames
         self.exp_dtypes = exp_dtypes
         self.inc_dtypes = inc_dtypes
+        self.selection = selection
+
+def get_bank_conf(bank_sel_json, settings_path, abortchar=None):
+    bankconfig = None
+    if len(bank_sel_json[env.BANK_SELECTION_KEY]) == 1:
+        bank_sel = bank_sel_json[env.BANK_SELECTION_KEY][0]
+    else:
+        bank_sel = select_from_list(bank_sel_json[env.BANK_SELECTION_KEY], "Which bank would you like to use today? ", ret_match=True, abortchar=abortchar)
+    
+    if bank_sel == env.SCOTIABANK:
+        bankconfig = Bankconfig(
+            settings_path = settings_path,
+            strip_cols = [env.TYPE, env.BANK_STORENAME],
+            check_for_dups_cols = env.CHECK_FOR_DUPLICATES_COL_NAMES,
+            regex_str = env.RE_EXPR,
+            ignorable_transactions = env.SCOTIA_IGNORABLE_TRANSACTIONS,
+            exp_colnames = env.COLUMN_NAMES,
+            inc_colnames = env.SB_INC_COLNAMES,
+            exp_dtypes=env.SCOTIA_EXP_DTYPES,
+            inc_dtypes=env.SCOTIA_INC_DTYPES,
+            selection=bank_sel
+        )
+
+    elif bank_sel == env.CIBC:
+        bankconfig = Bankconfig(
+            settings_path = settings_path,
+            strip_cols = [env.BANK_STORENAME],
+            check_for_dups_cols = env.CIBC_CHECK_FOR_DUPLICATES_COL_NAMES,
+            regex_str = env.RE_EXPR_CIBC,
+            ignorable_transactions = env.CIBC_IGNORABLE_TRANSACTIONS,
+            exp_colnames = env.CIBC_EXPENSE_COLNAMES, 
+            inc_colnames = env.CIBC_INCOME_COLNAMES,
+            exp_dtypes=env.CIBC_EXP_DTYPES,
+            inc_dtypes=env.CIBC_INC_DTYPES,
+            selection=bank_sel
+        )
+    elif bank_sel == env.BMO:
+        bankconfig = Bankconfig(
+            settings_path = settings_path,
+            strip_cols = [env.BANK_STORENAME],
+            check_for_dups_cols = env.BMO_CHECK_FOR_DUPLICATES_COL_NAMES,
+            regex_str = env.RE_EXPR_BMO,
+            ignorable_transactions = env.BMO_IGNORABLE_TRANSACTIONS,
+            exp_colnames = env.BMO_EXPENSE_COLNAMES, 
+            inc_colnames = env.BMO_INCOME_COLNAMES,
+            exp_dtypes=env.BMO_EXP_DTYPES,
+            inc_dtypes=env.BMO_INC_DTYPES,
+            selection=bank_sel
+        )
+    elif bank_sel == env.RBC:
+        bankconfig = Bankconfig(
+            settings_path = settings_path,
+            strip_cols = [env.BANK_STORENAME],
+            check_for_dups_cols = env.RBC_CHECK_FOR_DUPLICATES_COL_NAMES,
+            regex_str = env.RE_EXPR_RBC,
+            ignorable_transactions = env.RBC_IGNORABLE_TRANSACTIONS,
+            exp_colnames = env.RBC_EXPENSE_COLNAMES, 
+            inc_colnames = env.RBC_INCOME_COLNAMES,
+            exp_dtypes=env.RBC_EXP_DTYPES,
+            inc_dtypes=env.RBC_INC_DTYPES,
+            selection=bank_sel
+        )
+    
+    return bankconfig
 def get_current_month():
     today = datetime.datetime.today()
     datem = datetime.datetime(today.year, today.month, 1).strftime("%Y-%m-%d")
@@ -140,6 +207,9 @@ def select_from_list(lst, prompt, abortchar=None, ret_match=False, print_lst=Tru
     flag = False 
     while not flag:
         try:
+            if abortchar is not None:
+                prompt += " 'q' aborts: "
+                
             raw_in = input(prompt)
             
             if abortchar == raw_in:
@@ -454,13 +524,21 @@ def edit_list_in_dict(prompt, options, dct, key, dct_path, add=True):
     else:
         return None
 
-def get_input_given_type(prompt, data_type, abortchar='q'):
+def validate_lst_type(lst, typ):
+    for item in lst:
+        if type(item) != typ:
+            return False
+    return True
+def get_input_given_type(prompt, data_type, abortchar='q', setting=None):
     done = False 
     while not done:
         try:
             
             if data_type == list:
-                user_in = format_input_to_list(prompt, mode='integer')
+                if validate_lst_type(setting, int):
+                    user_in = format_input_to_list(prompt, mode='integer')
+                elif validate_lst_type(setting, str):
+                    user_in = format_input_to_list(prompt, mode='string')
             else:
                 user_in = input(prompt)
             if user_in == 'q':
