@@ -198,7 +198,6 @@ def filter_by_amnt(df, col_name, col_name2=None, bank_name=None):
         one with pos and one with neg.. where the negs are set to positive.
     """
     if bank_name == env.SCOTIABANK or bank_name == env.BMO:
-        print(df)
         inc_df = df[df[col_name] > 0].copy()
         exp_df = df[df[col_name] < 0].copy()
         exp_df.loc[:, col_name] = exp_df[col_name].abs()
