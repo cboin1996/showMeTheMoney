@@ -54,7 +54,7 @@ def load_and_process_csvs(file_paths, strip_cols=None, data_type=None):
     """
     dfs_in = []
     for fpath in file_paths:
-        if data_type == env.CIBC:
+        if data_type == env.CIBC or data_type == env.SCOTIABANK:
             df = pd.read_csv(fpath, header=None)
         else:
             df = pd.read_csv(fpath, header=0, skiprows=9)
@@ -149,10 +149,11 @@ def drop_dups(df, col_names, ignore_index=False):
 def remove_subframe(df_to_remove_from, df_to_remove, col_names):
     """
     Used to drop the a dataframe from within another
+    Adding df_to_remove twice guarantees removal.
     """
-    df = pd.concat([df_to_remove_from, df_to_remove])
+    df = pd.concat([df_to_remove_from, df_to_remove, df_to_remove])
     df[env.DATE] = pd.to_datetime(df[env.DATE])
-    df.drop_duplicates(keep=False, inplace=True, subset=col_names)
+    df.drop_duplicates(keep=False, inplace=True, subset=col_names, ignore_index=True)
 
     return df
 
@@ -197,7 +198,6 @@ def filter_by_amnt(df, col_name, col_name2=None, bank_name=None):
         one with pos and one with neg.. where the negs are set to positive.
     """
     if bank_name == env.SCOTIABANK or bank_name == env.BMO:
-        print(df)
         inc_df = df[df[col_name] > 0].copy()
         exp_df = df[df[col_name] < 0].copy()
         exp_df.loc[:, col_name] = exp_df[col_name].abs()

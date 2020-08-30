@@ -93,6 +93,9 @@ def check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adat
     if len(ndata_filepaths) != 0 and len(db_exp_data_fpaths) != 0 and len(db_inc_data_fpaths) != 0:
         df_new = data_help.load_and_process_csvs(file_paths=ndata_filepaths, strip_cols=bankconfig.strip_cols,
                                                  data_type=bank_sel_json[env.BANK_SELECTION_KEY])
+        util.print_fulldf(df_new)
+
+        
         df_inc_new, df_exp_new = data_help.filter_by_amnt(df_new, col_name=env.AMOUNT, col_name2=env.NULL, 
                                                           bank_name=bank_sel_json[env.BANK_SELECTION_KEY])
         df_inc_new = data_help.add_columns(
@@ -102,9 +105,8 @@ def check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adat
                                                         env.ADJUSTMENT, env.EXP_UUID, 
                                                         env.INC_UUID])
 
-        df_exp = data_help.load_csvs(file_paths=db_exp_data_fpaths, strip_cols=bankconfig.strip_cols)
-        df_inc = data_help.load_csvs(file_paths=db_inc_data_fpaths, strip_cols=bankconfig.strip_cols)
-
+        df_exp = data_help.load_csvs(file_paths=db_exp_data_fpaths, strip_cols=bankconfig.strip_cols, dtype=bankconfig.exp_dtypes)
+        df_inc = data_help.load_csvs(file_paths=db_inc_data_fpaths, strip_cols=bankconfig.strip_cols, dtype=bankconfig.inc_dtypes)
         df_exp = pd.concat([df_exp, df_exp_new])
         df_inc = pd.concat([df_inc, df_inc_new])
 
@@ -121,12 +123,20 @@ def check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adat
     else:
         return False
 
-    df_exp_recbin = data_help.load_csv(
-        exp_recbin_path, dtype=bankconfig.exp_dtypes, parse_dates=env.pdates_colname)
-    df_inc_recbin = data_help.load_csv(
-        inc_recbin_path, dtype=bankconfig.inc_dtypes, parse_dates=env.pdates_colname)
-    print("New data loaded locally.")
-    print(f"INCOME\n\n{df_inc}\n\nYOUR IGNORED INCOME\n\n{df_inc_recbin}\n\nEXPENSES\n\n{df_exp}\n\nYOUR IGNORED EXPENSES\n\n{df_exp_recbin}\n")
+    df_exp_recbin = data_help.load_csvs(
+        [exp_recbin_path], dtype=bankconfig.exp_dtypes, parse_dates=env.pdates_colname)
+    df_inc_recbin = data_help.load_csvs(
+        [inc_recbin_path], dtype=bankconfig.inc_dtypes, parse_dates=env.pdates_colname)
+    print("New data loaded locally.\n\n")
+    print("INCOME\n\n")
+    util.print_fulldf(df_inc)
+    print("IGNORED INCOME\n\n")
+    util.print_fulldf(df_inc_recbin)
+    print("EXPENSES\n\n")
+    util.print_fulldf(df_exp)
+    print("YOUR IGNORED EXPENSES\n\n")
+    util.print_fulldf(df_exp_recbin)
+
     df_exp = data_help.drop_dups(
         df=df_exp, col_names=bankconfig.check_for_dups_cols, ignore_index=True)
     df_inc = data_help.drop_dups(
@@ -137,7 +147,11 @@ def check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adat
     df_inc = data_help.remove_subframe(
         df_to_remove_from=df_inc, df_to_remove=df_inc_recbin, col_names=bankconfig.check_for_dups_cols)
 
-    print(f"INCOME\n\n{df_inc}\n\nEXPENSES\n\n{df_exp}\n")
+    print("INCOME WITHOUT DUPS\n\n")
+    util.print_fulldf(df_inc)
+    print("EXPENSES WITHOUT DUPS\n\n")
+    util.print_fulldf(df_exp)
+
     df_exp = data_help.iterate_df_and_add_uuid_to_col(df_exp, env.EXP_UUID)
     df_inc = data_help.iterate_df_and_add_uuid_to_col(df_inc, env.INC_UUID)
 
