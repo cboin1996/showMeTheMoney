@@ -284,58 +284,94 @@ def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor
 
     years = data_help.extract_years(df_exp.index.to_series())
     years_to_show = util.select_indices_of_list(
-        "Which of the above year(s) would you like to take a peak at - or 'q' to quit: ", years, return_matches=True, abortchar='q')
-    if years_to_show is not None:  # select_indices_of_list returns None if user aborts
-        for year in years_to_show:
-            df_inc = df_inc[year]  # filter for the year
-            print("\nAll Income this year. ")
-            util.print_fulldf(df_inc, dont_print_cols=dont_print_cols)
-            print("Income grouped by month and store")
-            df_inc_per_month = df_inc.groupby(
-                [pd.Grouper(freq='M'), env.BANK_STORENAME]).sum()
-            util.print_fulldf(df_inc_per_month)
-            df_budg = df_budg[year]
-            df_budg = df_budg.stack().apply(pd.Series).rename(
-                columns={0: env.BUDGET})  # collapse data into multindex frame
+        "Which of the above year(s) would you like to take a peak at, 'a' for all: ", years, return_matches=True, abortchar='q', 
+            ret_all_char='a')
+    
+    if years_to_show is None:  # select_indices_of_list returns None if user aborts 
+        return None
+    elif years_to_show != years:
+        df_exp.drop(years_to_show, inplace=True)
+        df_inc.drop(years_to_show, inplace=True)
+        df_budg.drop(years_to_show, inplace=True)
 
-            df_exp = df_exp[year]
-            print("All expense transactions this year.")
-            util.print_fulldf(df_exp, dont_print_cols=dont_print_cols)
+    freq, freq_desc = get_plotting_frequency()
+    if freq ==  None:
+        return None
+    if freq == 'M' or freq == 'Y':
+        plot_for_date(years, dont_print_cols, exp_dict, df_inc, df_budg,df_exp, settings, notes_dict, freq=freq, freq_desc=freq_desc)
+    else:
+        plot_for_date(years, dont_print_cols, exp_dict, df_inc, df_budg,df_exp, 
+            settings, notes_dict, freq='M', freq_desc='month', override_show=True)
+        plot_for_date(years, dont_print_cols, exp_dict, df_inc, 
+            df_budg,df_exp, settings, notes_dict, freq='Y', freq_desc='year')
 
-            print("Totals by store grouped per month.")
-            df_exp_stor_per_month = df_exp.groupby(
-                [pd.Grouper(freq="M"), env.EXPENSE, env.FILT_STORENAME]).sum()
-            util.print_fulldf(df_exp_stor_per_month)
+def get_plotting_frequency():
+    sel = util.get_user_input_for_chars("View by month (m) by year (y) or both (b)? (q) aborts. ", ['m', 'y', 'b', 'q'])
 
-            print("Totals by expense grouped per month with budgets")
-            df_exp_per_month = df_exp.groupby(
-                [pd.Grouper(freq="M"), env.EXPENSE]).sum()
-            df_exp_budg_per_month = pd.concat(
-                [df_exp_per_month, df_budg], axis=1)
-            df_exp_budg_per_month[env.AMOUNT] = df_exp_budg_per_month[env.AMOUNT].fillna(
-                0)
-            df_exp_budg_per_month[env.REMAINING] = df_exp_budg_per_month[env.BUDGET] - \
-                df_exp_budg_per_month[env.AMOUNT]
-            util.print_fulldf(df_exp_budg_per_month)
+    if sel == 'q':
+        return None 
+    elif sel == 'm':
+        return sel.upper(), 'month'
+    elif sel == 'y':
+        return sel.upper(), 'year'
+    elif sel == 'b':
+        return sel, 'both'
 
-            # do not plot in title if none are present
-            if len(exp_dict[env.EXPENSES_SUBTRACTED_KEY]) == 0:
-                title_templ_for_budg = "\n".join(("%s",
-                                            "Income: %s | Expenses: %s | Budget: %s",
-                                            "Net Income: %s | Budget Rem.: %s"))
-                subtractable_expenses = None
-            else:
-                title_templ_for_budg = "\n".join(("%s",
-                                        "Income: %s | Expenses: %s | Budget: %s | Budget without %s : %s ",
-                                        "Net Income: %s | Budget Rem.: %s | Budget Rem. without %s : %s"))
-                subtractable_expenses = exp_dict[env.EXPENSES_SUBTRACTED_KEY]
+def plot_for_date(years, dont_print_cols, exp_dict, df_inc, df_budg, df_exp, settings, notes_dict, freq, freq_desc,
+                    override_show=False):
+    show_plot1 = False
+    show_plot2 = True
+    if override_show == True:
+        show_plot2 = False
+  # filter for the year
+    print(f"\nAll Income in {years}. ")
+    util.print_fulldf(df_inc, dont_print_cols=dont_print_cols)
+    print(f"Income grouped by {freq_desc} and store")
+    df_inc_per_freq_stores = df_inc.groupby(
+        [pd.Grouper(freq=freq), env.BANK_STORENAME]).sum()
+    util.print_fulldf(df_inc_per_freq_stores) 
 
-            budg_plotter(df_exp_budg_per_month, df_exp_budg_per_month.groupby(level=0).sum(), df_inc, settings=settings, title_templ=title_templ_for_budg, 
-                        show=False, sort_by_level=0, notes=notes_dict, subtractable_expenses=subtractable_expenses, tbox_color='wheat', tbox_style='round', 
-                        tbox_alpha=0.5, year=year)
-            title_templ_for_stor_plt = "%s\nIncome: %s | Expenses: %s | Budget: %s\nNet Income: %s | Budget Rem.: %s"
-            budg_plotter(df_exp_stor_per_month, df_exp_budg_per_month.groupby(level=0).sum(), df_inc, settings=settings, title_templ=title_templ_for_stor_plt, 
-                        show=True, sort_by_level=0, notes=notes_dict, tbox_color='wheat', tbox_style='round', tbox_alpha=0.5,  year=year)
+    df_inc_per_freq= df_inc.groupby(
+        [pd.Grouper(freq=freq)]).sum()
+
+    df_budg_per_freq = df_budg.groupby([pd.Grouper(freq=freq)]).sum() # compile for the frequency
+    df_budg_per_freq = df_budg_per_freq.stack().apply(pd.Series).rename(
+        columns={0: env.BUDGET})  # collapse data into multindex frame
+
+    print(f"All expense transactions in {years}.")
+    util.print_fulldf(df_exp, dont_print_cols=dont_print_cols)
+
+    print(f"Totals by store grouped per {freq_desc}.")
+    df_exp_stor_per_freq = df_exp.groupby(
+        [pd.Grouper(freq=freq), env.EXPENSE, env.FILT_STORENAME]).sum()
+    util.print_fulldf(df_exp_stor_per_freq)
+
+    print(f"Totals by expense grouped per {freq_desc} with budgets")
+    df_exp_per_freq = df_exp.groupby([pd.Grouper(freq=freq), env.EXPENSE]).sum()
+    df_exp_budg_per_freq = pd.concat([df_exp_per_freq, df_budg_per_freq], axis=1)
+    df_exp_budg_per_freq[env.AMOUNT] = df_exp_budg_per_freq[env.AMOUNT].fillna(0)
+    df_exp_budg_per_freq[env.REMAINING] = df_exp_budg_per_freq[env.BUDGET] - \
+        df_exp_budg_per_freq[env.AMOUNT]
+    util.print_fulldf(df_exp_budg_per_freq)
+
+    # do not plot in title if none are present
+    if len(exp_dict[env.EXPENSES_SUBTRACTED_KEY]) == 0:
+        title_templ_for_budg = "\n".join(("%s",
+                                    "Income: %s | Expenses: %s | Budget: %s",
+                                    "Net Income: %s | Budget Rem.: %s"))
+        subtractable_expenses = None
+    else:
+        title_templ_for_budg = "\n".join(("%s",
+                                "Income: %s | Expenses: %s | Budget: %s | Budget without %s : %s ",
+                                "Net Income: %s | Budget Rem.: %s | Budget Rem. without %s : %s"))
+        subtractable_expenses = exp_dict[env.EXPENSES_SUBTRACTED_KEY]
+
+    budg_plotter(df_exp_budg_per_freq, df_exp_budg_per_freq.groupby(level=0).sum(), df_inc_per_freq, settings=settings, title_templ=title_templ_for_budg, 
+                show=show_plot1, sort_by_level=0, notes=notes_dict, subtractable_expenses=subtractable_expenses, tbox_color='wheat', tbox_style='round', 
+                tbox_alpha=0.5, year=years)
+    title_templ_for_stor_plt = "%s\nIncome: %s | Expenses: %s | Budget: %s\nNet Income: %s | Budget Rem.: %s"
+    budg_plotter(df_exp_stor_per_freq, df_exp_budg_per_freq.groupby(level=0).sum(), df_inc_per_freq, settings=settings, title_templ=title_templ_for_stor_plt, 
+                show=show_plot2, sort_by_level=0, notes=notes_dict, tbox_color='wheat', tbox_style='round', tbox_alpha=0.5,  year=years)
 
 def get_totals(budget_df, df_inc, date_key=None):
     if date_key == None:
@@ -347,7 +383,7 @@ def get_totals(budget_df, df_inc, date_key=None):
     else:
         exp_tot = round(budget_df.loc[date_key, env.AMOUNT].sum(), 2)
 
-        if date_key in df_inc.index:  # detect whether there was income that month.
+        if date_key in df_inc.index:  # detect whether there was income that timeframe.
             inc_tot = round(df_inc.loc[date_key, env.AMOUNT].sum(), 2)
         else:
             inc_tot = 0
@@ -402,6 +438,7 @@ def get_title(title_templ, df, subtractables, inc_tot, exp_tot, net_inc, budg_to
                                 inc_tot, exp_tot, budg_tot, net_inc, budg_re)
     
     return title
+
 def budg_plotter(df_to_plot, budget_df, df_inc, settings = None, title_templ="", show=True,
                  sort_by_level=None, notes=None, subtractable_expenses=None, tbox_color=None, tbox_style=None, tbox_alpha=None,
                  year=None):
@@ -432,10 +469,10 @@ def budg_plotter(df_to_plot, budget_df, df_inc, settings = None, title_templ="",
     plot_idx = 1
     # allows multiindex slicing once sorted.
     df_to_plot.sort_index(level=[0, 1], ascending=[True, True], inplace=True)
-    yr_exp_tot, yr_budg_tot, yr_budg_re, yr_net_inc, yr_inc_tot = get_totals(budget_df, df_inc)
+    all_exp_tot, all_budg_tot, all_budg_re, all_net_inc, all_inc_tot = get_totals(budget_df, df_inc)
     
-    sup_title = get_title(title_templ, df_to_plot, subtractable_expenses, yr_inc_tot,
-                                        yr_exp_tot, yr_net_inc, yr_budg_tot, yr_budg_re, f"{year} summary.")
+    sup_title = get_title(title_templ, df_to_plot, subtractable_expenses, all_inc_tot,
+                                        all_exp_tot, all_net_inc, all_budg_tot, all_budg_re, f"{year} summary.")
     plt.figure(figsize=figsize, facecolor='white')
 
     for date, sub_df in df_to_plot.groupby(level=0):
@@ -443,7 +480,7 @@ def budg_plotter(df_to_plot, budget_df, df_inc, settings = None, title_templ="",
         date_key = f"{date.year}-{date.month}"
 
         if plot_idx > subfigs_per_fig:
-            # get yearly title.
+            # get global title.
             plt.tight_layout()
             plt.suptitle(sup_title, size=parent_titl_font_size) # title for previous figure
             plt.figure(figsize=figsize, facecolor='white') # create new figure
@@ -457,10 +494,10 @@ def budg_plotter(df_to_plot, budget_df, df_inc, settings = None, title_templ="",
 
         ax = plt.subplot(nrows, ncols, plot_idx)
 
-        # get the monthly title
-        month_exp_tot, month_budg_tot, month_budg_re, month_net_inc, month_inc_tot = get_totals(budget_df, df_inc, date_key)
-        title = get_title(title_templ, df_to_plot, subtractable_expenses, month_inc_tot,
-                          month_exp_tot, month_net_inc, month_budg_tot, month_budg_re, f"{date.month_name()} {date.year}", 
+        # get the title
+        exp_tot, budg_tot, budg_re, net_inc, inc_tot = get_totals(budget_df, df_inc, date_key)
+        title = get_title(title_templ, df_to_plot, subtractable_expenses, inc_tot,
+                          exp_tot, net_inc, budg_tot, budg_re, f"Ending: {date.month_name()} {date.year}", 
                           str_date)
 
         ax.set_title(title, size=subfig_titl_font_size)

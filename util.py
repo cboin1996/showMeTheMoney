@@ -359,7 +359,7 @@ def prompt_with_warning(prompt, ret_lowercase=True):
     
     return user_in
 
-def format_input_to_list(prompt, mode='string', quit_str=None):
+def format_input_to_list(prompt, mode='string', quit_str=None, sel_all=None):
     """
     Used for getting the words in a list and verifying they are all strings
     params:
@@ -376,6 +376,8 @@ def format_input_to_list(prompt, mode='string', quit_str=None):
         if user_in == quit_str:
             print("Aborting.")
             return
+        if user_in == sel_all:
+            return sel_all
         if mode == 'integer':
             match = re.search(r"[\d\s]+", user_in) 
         elif mode == 'string':
@@ -414,7 +416,7 @@ def select_item_not_in_list(prompt, lst, ignorecase=True, abortchar=None):
     
     return user_in
 
-def select_indices_of_list(prompt='', list_to_compare_to=[], return_matches=False, abortchar=None, print_lst=True):
+def select_indices_of_list(prompt='', list_to_compare_to=[], return_matches=False, abortchar=None, print_lst=True, ret_all_char=None):
     """
     Gets user input for certain elements of a list
     params:
@@ -430,11 +432,14 @@ def select_indices_of_list(prompt='', list_to_compare_to=[], return_matches=Fals
         print_lst_with_index(list_to_compare_to)
     while success == False:
         try:
-            user_input = format_input_to_list(prompt, mode='integer', quit_str=abortchar)
+            user_input = format_input_to_list(prompt, mode='integer', quit_str=abortchar, sel_all=ret_all_char)
             if user_input == None:
                 print("Aborting.")
                 return None
             
+            elif user_input == ret_all_char:
+                return list_to_compare_to
+                
             for i, integer in enumerate(user_input): # validate each character
                 if integer < len(list_to_compare_to) and integer >= 0:
                     selections.append(integer)
