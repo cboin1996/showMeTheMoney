@@ -236,7 +236,7 @@ def select_from_list(lst, prompt, abortchar=None, ret_match=False, print_lst=Tru
         user_sel = lst[user_sel]
     return user_sel 
 
-def print_sorted_dict(dct, keys_list, print_vals=False, print_children=False):
+def print_sorted_dict(dct, keys_list, print_vals=False, print_children=False, print_child_vals=False):
     for idx, key in enumerate(keys_list):
         output = f"[{idx}] - {key}"
         if print_vals == True:
@@ -244,9 +244,9 @@ def print_sorted_dict(dct, keys_list, print_vals=False, print_children=False):
         print(output)
         
         if print_children == True:
-            print_simple_dict(dct[key])
+            print_simple_dict(dct[key], print_child_vals)
 
-def select_dict_key_using_integer(dct, prompt, print_children=True, quit_str='', print_aborting=True, print_vals=False):
+def select_dict_key_using_integer(dct, prompt, print_children=True, quit_str='', print_aborting=True, print_vals=False, print_child_vals=False):
     """
     Returns a key from the dictionary that a user selects using an integer index. Funny eh?
     params:
@@ -256,7 +256,7 @@ def select_dict_key_using_integer(dct, prompt, print_children=True, quit_str='',
     """
     keys_list = list(dct.keys())
     keys_list.sort()
-    print_sorted_dict(dct, keys_list, print_vals=print_vals, print_children=print_children)
+    print_sorted_dict(dct, keys_list, print_vals=print_vals, print_children=print_children, print_child_vals=print_child_vals)
     
     flag = False
     while not flag:
@@ -323,7 +323,7 @@ def print_simple_dict(dct, print_vals=False):
     for k, v in dct.items():
         output = f"\t[{i}] {k} "
         if print_vals == True:
-            output = output + ": {v}"
+            output = output + f": {v}"
         print(output)
         i += 1
 

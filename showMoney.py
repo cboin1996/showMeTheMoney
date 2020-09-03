@@ -320,51 +320,133 @@ def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor
 
             # do not plot in title if none are present
             if len(exp_dict[env.EXPENSES_SUBTRACTED_KEY]) == 0:
-                title_templ_for_budg = "%s\nIncome: %s | Expenses: %s | Budget: %s\nNet Income: %s | Budget Rem.: %s"
+                title_templ_for_budg = "\n".join(("%s",
+                                            "Income: %s | Expenses: %s | Budget: %s",
+                                            "Net Income: %s | Budget Rem.: %s"))
                 subtractable_expenses = None
             else:
-                title_templ_for_budg = "%s\nIncome: %s | Expenses: %s | Budget: %s\nNet Income: %s | Budget Rem.: %s | Budget Rem. without %s : %s"
+                title_templ_for_budg = "\n".join(("%s",
+                                        "Income: %s | Expenses: %s | Budget: %s | Budget without %s : %s ",
+                                        "Net Income: %s | Budget Rem.: %s | Budget Rem. without %s : %s"))
                 subtractable_expenses = exp_dict[env.EXPENSES_SUBTRACTED_KEY]
 
-            budg_plotter(df_exp_budg_per_month, df_exp_budg_per_month.groupby(level=0).sum(), df_inc, figsize=settings[env.PLOT_SIZE_KEY], nrows=settings[env.NUM_ROWS_KEY], 
-                        ncols=settings[env.NUM_COLS_KEY], subfigs_per_fig=settings[env.NUM_ROWS_KEY]*settings[env.NUM_COLS_KEY], title_templ=title_templ_for_budg, 
-                        show=False, sort_by_level=0, notes=notes_dict, subtractable_expenses=subtractable_expenses, tbox_color='wheat', tbox_style='round', tbox_alpha=0.5)
+            budg_plotter(df_exp_budg_per_month, df_exp_budg_per_month.groupby(level=0).sum(), df_inc, settings=settings, title_templ=title_templ_for_budg, 
+                        show=False, sort_by_level=0, notes=notes_dict, subtractable_expenses=subtractable_expenses, tbox_color='wheat', tbox_style='round', 
+                        tbox_alpha=0.5, year=year)
             title_templ_for_stor_plt = "%s\nIncome: %s | Expenses: %s | Budget: %s\nNet Income: %s | Budget Rem.: %s"
-            budg_plotter(df_exp_stor_per_month, df_exp_budg_per_month.groupby(level=0).sum(), df_inc, figsize=settings[env.PLOT_SIZE_KEY], nrows=settings[env.NUM_ROWS_KEY], 
-                        ncols=settings[env.NUM_COLS_KEY], subfigs_per_fig=settings[env.NUM_ROWS_KEY]*settings[env.NUM_COLS_KEY], title_templ=title_templ_for_stor_plt, 
-                        show=True, sort_by_level=0, notes=notes_dict, tbox_color='wheat', tbox_style='round', tbox_alpha=0.5)
+            budg_plotter(df_exp_stor_per_month, df_exp_budg_per_month.groupby(level=0).sum(), df_inc, settings=settings, title_templ=title_templ_for_stor_plt, 
+                        show=True, sort_by_level=0, notes=notes_dict, tbox_color='wheat', tbox_style='round', tbox_alpha=0.5,  year=year)
 
+def get_totals(budget_df, df_inc, date_key=None):
+    if date_key == None:
+        exp_tot = round(budget_df[env.AMOUNT].sum(), 2)
+        budg_tot = round(budget_df[env.BUDGET].sum(), 2)
+        budg_re = round(budget_df[env.REMAINING].sum(), 2)
+        inc_tot = round(df_inc.loc[:, env.AMOUNT].sum(), 2)
+        net_inc = round(inc_tot - exp_tot, 2)
+    else:
+        exp_tot = round(budget_df.loc[date_key, env.AMOUNT].sum(), 2)
 
-def budg_plotter(df_to_plot, budget_df, df_inc, figsize=None, nrows=None, ncols=None, subfigs_per_fig=None, title_templ="", show=True,
-                 sort_by_level=None, notes=None, subtractable_expenses=None, tbox_color=None, tbox_style=None, tbox_alpha=None):
+        if date_key in df_inc.index:  # detect whether there was income that month.
+            inc_tot = round(df_inc.loc[date_key, env.AMOUNT].sum(), 2)
+        else:
+            inc_tot = 0
+
+        budg_tot = round(budget_df.loc[date_key, env.BUDGET].sum(), 2)
+        net_inc = round(inc_tot - exp_tot, 2)
+        budg_re = round(budg_tot - exp_tot, 2)
+
+    return exp_tot, budg_tot, budg_re, net_inc, inc_tot
+
+def deduct_subtractables(df, subtractables, date_key, amt1, amt2):
+    """Allows the subtraction of subtractables against the multi index
+
+    Args:
+        df (Dataframe): pandas df
+        subtractables (List): list of items to  subtract off of the remaining budget
+        date_key (Str): the date key to slice with, if none, ignore and select all dates
+        amt1 (float): general dollar amount to subtract from
+        amt2 (float): general dollar amount to subtract from
+
+    Returns:
+        float, float : the dollar amounts acquired from the subtractions against amt1 and amt2
+    """
+    for exp in subtractables:
+        if date_key is not None:
+            subtr_amnt = round(
+                df.loc[(date_key, exp), env.REMAINING].sum(), 2)
+        else:
+            df_no_date = df.reset_index(level=0, drop=True)
+            subtr_amnt = round(
+                df_no_date.loc[exp, env.REMAINING].sum(), 2)
+        amt1 -= subtr_amnt
+        amt2 -= subtr_amnt
+    
+    return round(amt1, 2), round(amt2, 2)
+
+def get_title(title_templ, df, subtractables, inc_tot, exp_tot, net_inc, budg_tot, budg_re, header, str_date=None):
+    if subtractables is not None:  # check for any subtractable expenses when plotting to title
+        budg_re_with_subtractions, budg_tot_with_subtractions = deduct_subtractables(df, 
+                                                                                    subtractables,
+                                                                                    str_date,
+                                                                                    budg_re,
+                                                                                    budg_tot
+                                                                                    )
+
+        title = title_templ % (header, inc_tot, exp_tot,
+                                budg_tot, subtractables, budg_tot_with_subtractions, net_inc, 
+                                budg_re, subtractables, budg_re_with_subtractions)
+
+    else:
+        title = title_templ % (header,
+                                inc_tot, exp_tot, budg_tot, net_inc, budg_re)
+    
+    return title
+def budg_plotter(df_to_plot, budget_df, df_inc, settings = None, title_templ="", show=True,
+                 sort_by_level=None, notes=None, subtractable_expenses=None, tbox_color=None, tbox_style=None, tbox_alpha=None,
+                 year=None):
     """
     Given a multindex dataframe, plots the data
-    params:
-        df_to_plot - the multiindex df to iterate and plot. 
-        budget_df - simplified budget data showing total amount and budget for the month
-        figsize - the figure size in tuple format
-        nrows - the number of figures to plot in a row
-        ncols - the number of figures to plot in a col
-        subfigs_per_fig - the number of subfigs to plot on a single figure
-        title_templ - the unformatted string for formatting
-        show - boolean allowing the function to be chained, showing all plots at once at the end.
-        sort_by_level - the level of the multiindex to sort by. Note, use n-1 since the first index is dropped for plotting
-        notes - Textbox text dict {date : note} to add to figures
-        subtractable_expenses - the expenses to subtract when plotting the title information. If none, do not calculate and include in the title
-        tbox_color - Colour of textbox, 
-        tbox_style - Style of textbox (see matplolib), 
-        tbox_alpha - transparency of textbox
+    Args:
+        df_to_plot : the multiindex df to iterate and plot. 
+        budget_df : simplified budget data showing total amount and budget for the month
+        df_inc : the income dataframe
+        settings : a json object containing plot settings
+        title_templ : the unformatted string for formatting
+        show : boolean allowing the function to be chained, showing all plots at once at the end.
+        sort_by_level : the level of the multiindex to sort by. Note, use n-1 since the first index is dropped for plotting
+        notes : Textbox text dict {date : note} to add to figures
+        subtractable_expenses : the expenses to subtract when plotting the title information. If none, do not calculate and include in the title
+        tbox_color : Colour of textbox, 
+        tbox_style : Style of textbox (see matplolib), 
+        tbox_alpha : transparency of textbox,
+        year : the numeric year
     """
-    plt.figure(figsize=figsize, facecolor='white')
+    figsize=settings[env.PLOT_SIZE_KEY]
+    nrows=settings[env.NUM_ROWS_KEY]
+    ncols=settings[env.NUM_COLS_KEY]
+    subfigs_per_fig=settings[env.NUM_ROWS_KEY]*settings[env.NUM_COLS_KEY]
+    parent_titl_font_size = settings[env.PA_FIG_TITL_SIZE_KEY]
+    subfig_titl_font_size = settings[env.SUB_FIG_TITL_SIZE_KEY]
+
     plot_idx = 1
     # allows multiindex slicing once sorted.
     df_to_plot.sort_index(level=[0, 1], ascending=[True, True], inplace=True)
+    yr_exp_tot, yr_budg_tot, yr_budg_re, yr_net_inc, yr_inc_tot = get_totals(budget_df, df_inc)
+    
+    sup_title = get_title(title_templ, df_to_plot, subtractable_expenses, yr_inc_tot,
+                                        yr_exp_tot, yr_net_inc, yr_budg_tot, yr_budg_re, f"{year} summary.")
+    plt.figure(figsize=figsize, facecolor='white')
+
     for date, sub_df in df_to_plot.groupby(level=0):
         str_date = date.strftime("%Y-%m-%d")
         date_key = f"{date.year}-{date.month}"
+
         if plot_idx > subfigs_per_fig:
+            # get yearly title.
             plt.tight_layout()
-            plt.figure(figsize=figsize, facecolor='white')
+            plt.suptitle(sup_title, size=parent_titl_font_size) # title for previous figure
+            plt.figure(figsize=figsize, facecolor='white') # create new figure
             plot_idx = 1
 
         # drop date index for plotting
@@ -375,32 +457,13 @@ def budg_plotter(df_to_plot, budget_df, df_inc, figsize=None, nrows=None, ncols=
 
         ax = plt.subplot(nrows, ncols, plot_idx)
 
-        month_exp_tot = round(budget_df.loc[date_key, env.AMOUNT].sum(), 2)
+        # get the monthly title
+        month_exp_tot, month_budg_tot, month_budg_re, month_net_inc, month_inc_tot = get_totals(budget_df, df_inc, date_key)
+        title = get_title(title_templ, df_to_plot, subtractable_expenses, month_inc_tot,
+                          month_exp_tot, month_net_inc, month_budg_tot, month_budg_re, f"{date.month_name()} {date.year}", 
+                          str_date)
 
-        if date_key in df_inc.index:  # detect whether there was income that month.
-            month_inc_tot = round(df_inc.loc[date_key, env.AMOUNT].sum(), 2)
-        else:
-            month_inc_tot = 0
-
-        budg_tot = round(budget_df.loc[date_key, env.BUDGET].sum(), 2)
-        net_inc = round(month_inc_tot - month_exp_tot, 2)
-        budg_re = round(budg_tot - month_exp_tot, 2)
-
-        if subtractable_expenses is not None:  # check for any subtractable expenses when plotting to title
-            budg_re_with_subtractions = budg_re
-            for exp in subtractable_expenses:
-                subtr_amnt = round(
-                    df_to_plot.loc[(str_date, exp), env.REMAINING].sum(), 2)
-                budg_re_with_subtractions -= subtr_amnt
-
-            budg_re_with_subtractions = round(budg_re_with_subtractions, 2)
-            title = title_templ % (f"{date.month_name()} {date.year}", month_inc_tot, month_exp_tot,
-                                   budg_tot, net_inc, budg_re, subtractable_expenses, budg_re_with_subtractions)
-
-        else:
-            title = title_templ % (f"{date.month_name()} {date.year}",
-                                   month_inc_tot, month_exp_tot, budg_tot, net_inc, budg_re)
-        ax.set_title(title)
+        ax.set_title(title, size=subfig_titl_font_size)
         sub_ax = sub_df.plot.bar(ax=ax)
 
         # check to ensure params are passed, and notes dict contains the date
@@ -415,6 +478,7 @@ def budg_plotter(df_to_plot, budget_df, df_inc, figsize=None, nrows=None, ncols=
         for l in sub_ax.get_xticklabels():
             l.set_rotation(45)
             l.set_ha('right')
+
         for p in sub_ax.patches:
             ax.annotate(str(round(p.get_height(), 2)), (p.get_x()+p.get_width()/2., p.get_height()),
                         ha='center', va='center', fontsize=7, fontweight='bold')
@@ -424,6 +488,8 @@ def budg_plotter(df_to_plot, budget_df, df_inc, figsize=None, nrows=None, ncols=
         plot_idx += 1
 
     plt.tight_layout()
+    plt.suptitle(sup_title, size=parent_titl_font_size)
+
     if show == True:
         plt.show()
 

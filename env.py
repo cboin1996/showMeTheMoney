@@ -120,7 +120,10 @@ NUM_ROWS_KEY = "number of rows"
 NUM_ROWS_DEFAULT = 3
 NUM_COLS_KEY = "number of columns"
 NUM_COLS_DEFAULT = 1
-
+PA_FIG_TITL_SIZE_KEY = "Parent figure title size"
+PA_FIG_TITL_SIZE_DEFAULT = 8
+SUB_FIG_TITL_SIZE_KEY = "Subfigures title size"
+SUB_FIG_TITL_SIZE_DEFAULT = 12
 
 
 def mydateparser(x): return pd.datetime.strptime(x, "%Y-%m-%d")
@@ -190,6 +193,8 @@ SETTINGS_TEMPL = {
                     PLOT_SIZE_KEY: PLOT_SIZE_DEFAULT,
                     NUM_ROWS_KEY: NUM_ROWS_DEFAULT,
                     NUM_COLS_KEY: NUM_COLS_DEFAULT,       
+                    PA_FIG_TITL_SIZE_KEY : PA_FIG_TITL_SIZE_DEFAULT,
+                    SUB_FIG_TITL_SIZE_KEY : SUB_FIG_TITL_SIZE_DEFAULT
 }
 EXPENSE_DATA_KEY = 'expense'
 BUDGET_TOTAL_KEY = 'total'

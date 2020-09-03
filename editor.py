@@ -166,6 +166,7 @@ def replace_store_in_df(prompt, df, df_path, new_pairing, exp_stor_data, budg_db
 
         data_help.write_data(df, df_path)
         util.print_fulldf(df)
+
 def expenses_editor(db_exp_data_fpaths, exp_recbin_path, stor_pair_path, exp_stor_data_path, budg_path, exp_path, bankconfig=None):
     """
     Edits an expense's name across all databases
@@ -225,39 +226,42 @@ def edit_expense_name(exp_db_data_filepath, df, exp_recbin_path, df_rec, exp_dat
     """
     exps_to_edit = util.select_indices_of_list("Which expense(s) would you like to edit?: ", exp_data[env.EXPENSE_DATA_KEY],
                                         abortchar='q', return_matches=True)
-    if exps_to_edit is not None: # none type quits
-        for exp_to_edit in exps_to_edit:
-            if exp_to_edit != env.EXPENSE_MISC_STR:
+    if exps_to_edit is None: # none type quits
+        return None
 
-                expense_new_name = util.select_item_not_in_list(f"Enter your new expense name for '{exp_to_edit}' 'q' to abort: ", exp_data[env.EXPENSE_DATA_KEY],
-                                                            ignorecase=False, abortchar='q')
-                if expense_new_name != None: 
-                    # edit the exp_stor_db
-                    print(f"--- Editing {env.EXP_STOR_DB_FNAME} --- ")
-                    for store in exp_stor_data.keys():
-                        if exp_to_edit in exp_stor_data[store]:
-                            print(f"In {store}: ", end=" ")
-                        exp_stor_data[store] = util.replace_string_in_list(exp_stor_data[store], exp_to_edit, expense_new_name)
-                
-                    # Edit the budg_db
-                    print(f"\n--- Editing {env.BUDGET_FNAME} --- ")
-                    for date in budg_data.keys():
-                        budg_data[date] = data_help.modify_dict_key(budg_data[date], exp_to_edit, expense_new_name)
-                    # Edit expenses.json
-                    print(f"--- Editing {env.EXP_FNAME} --- ")
-                    exp_data[env.EXPENSE_DATA_KEY] = util.replace_string_in_list(exp_data[env.EXPENSE_DATA_KEY], exp_to_edit, expense_new_name)
-                    # Edit exp_db.csv and (writes itself)
-                    print(f"--- Editing {env.OUT_EXP_DATA_TEMPL} --- ")
-                    edit_df_entries(df, exp_db_data_filepath, env.EXPENSE, exp_to_edit, expense_new_name)
-                    print(f"--- Editing {env.OUT_EXPREC_DATA_TEMPL} --- ")
-                    edit_df_entries(df_rec, exp_recbin_path, env.EXPENSE, exp_to_edit, expense_new_name)
-                    # Write changes
-                    data_help.write_to_jsonFile(budg_path, budg_data)
-                    data_help.write_to_jsonFile(exp_path, exp_data)
-                    data_help.write_to_jsonFile(exp_stor_data_path, exp_stor_data)
+    for exp_to_edit in exps_to_edit:
+        if exp_to_edit != env.EXPENSE_MISC_STR:
 
-            else:
-                print(f"'{env.EXPENSE_MISC_STR}' is a reserved expense category, and its name cannot be changed.")
+            expense_new_name = util.select_item_not_in_list(f"Enter your new expense name for '{exp_to_edit}' 'q' to abort: ", exp_data[env.EXPENSE_DATA_KEY],
+                                                        ignorecase=False, abortchar='q')
+            if expense_new_name is None: 
+                return None
+            # edit the exp_stor_db
+            print(f"--- Editing {env.EXP_STOR_DB_FNAME} --- ")
+            for store in exp_stor_data.keys():
+                if exp_to_edit in exp_stor_data[store]:
+                    print(f"In {store}: ", end=" ")
+                exp_stor_data[store] = util.replace_string_in_list(exp_stor_data[store], exp_to_edit, expense_new_name)
+        
+            # Edit the budg_db
+            print(f"\n--- Editing {env.BUDGET_FNAME} --- ")
+            for date in budg_data.keys():
+                budg_data[date] = data_help.modify_dict_key(budg_data[date], exp_to_edit, expense_new_name)
+            # Edit expenses.json
+            print(f"--- Editing {env.EXP_FNAME} --- ")
+            exp_data[env.EXPENSE_DATA_KEY] = util.replace_string_in_list(exp_data[env.EXPENSE_DATA_KEY], exp_to_edit, expense_new_name)
+            # Edit exp_db.csv and (writes itself)
+            print(f"--- Editing {env.OUT_EXP_DATA_TEMPL} --- ")
+            edit_df_entries(df, exp_db_data_filepath, env.EXPENSE, exp_to_edit, expense_new_name)
+            print(f"--- Editing {env.OUT_EXPREC_DATA_TEMPL} --- ")
+            edit_df_entries(df_rec, exp_recbin_path, env.EXPENSE, exp_to_edit, expense_new_name)
+            # Write changes
+            data_help.write_to_jsonFile(budg_path, budg_data)
+            data_help.write_to_jsonFile(exp_path, exp_data)
+            data_help.write_to_jsonFile(exp_stor_data_path, exp_stor_data)
+
+        else:
+            print(f"'{env.EXPENSE_MISC_STR}' is a reserved expense category, and its name cannot be changed.")
 
 def remove_expense_from_dbs(exp_db_data_filepath, exp_recbin_path, exp_stor_data, exp_data, 
                             budg_data, df, df_rec, exp_stor_data_path, budg_path, exp_path): 
@@ -269,45 +273,47 @@ def remove_expense_from_dbs(exp_db_data_filepath, exp_recbin_path, exp_stor_data
     print("Any budget amnt for that expense will be added to Misc to maintain balance in the force.")
     exps_to_rem = util.select_indices_of_list("Which expense(s) would you like to go? ", exp_data[env.EXPENSE_DATA_KEY], 
                                        abortchar='q', return_matches=True)
-    if exps_to_rem is not None:
-        for exp_to_rem in exps_to_rem:
-            if exp_to_rem != env.EXPENSE_MISC_STR:
+    if exps_to_rem is None:
+        return None
 
-                # delete from exp_stor db
-                print(f"--- Editing {env.EXP_STOR_DB_FNAME} --- ")
-                for store in exp_stor_data.keys():
-                    if exp_to_rem in exp_stor_data[store]:
-                        exp_stor_data[store].remove(exp_to_rem)
-                        print(f"Removed {exp_to_rem} from {store}.")
-                
-                
-                # delete from expenses db
-                print(f"--- Editing {env.EXP_FNAME} --- ")
-                exp_data[env.EXPENSE_DATA_KEY].remove(exp_to_rem) 
-                print(f"Removed {exp_to_rem} from {env.EXP_FNAME}.")
-                
+    for exp_to_rem in exps_to_rem:
+        if exp_to_rem != env.EXPENSE_MISC_STR:
 
-                # remove from budget, adding amnt to Misc
-                print(f"\n--- Editing {env.BUDGET_FNAME} --- ")
-                for date in budg_data.keys(): 
-                    if exp_to_rem in budg_data[date].keys():
-                        amnt_to_misc = budg_data[date][exp_to_rem]
-                        budg_data[date][env.EXPENSE_MISC_STR] += amnt_to_misc
-                        budg_data[date].pop(exp_to_rem)
-                    else:
-                        print("No expense in this months budget.")
+            # delete from exp_stor db
+            print(f"--- Editing {env.EXP_STOR_DB_FNAME} --- ")
+            for store in exp_stor_data.keys():
+                if exp_to_rem in exp_stor_data[store]:
+                    exp_stor_data[store].remove(exp_to_rem)
+                    print(f"Removed {exp_to_rem} from {store}.")
+            
+            
+            # delete from expenses db
+            print(f"--- Editing {env.EXP_FNAME} --- ")
+            exp_data[env.EXPENSE_DATA_KEY].remove(exp_to_rem) 
+            print(f"Removed {exp_to_rem} from {env.EXP_FNAME}.")
+            
 
-                print(f"--- Editing {env.OUT_EXP_DATA_TEMPL} --- ")
-                edit_df_entries(df, exp_db_data_filepath, env.EXPENSE, exp_to_rem, env.EXPENSE_MISC_STR)
-                print(f"--- Editing {env.OUT_EXPREC_DATA_TEMPL} --- ")
-                edit_df_entries(df_rec, exp_recbin_path, env.EXPENSE, exp_to_rem, env.EXPENSE_MISC_STR)
-                # write changes
-                data_help.write_to_jsonFile(budg_path, budg_data)
-                data_help.write_to_jsonFile(exp_path, exp_data)
-                data_help.write_to_jsonFile(exp_stor_data_path, exp_stor_data)
-                    
-            else:
-                print(f"'{env.EXPENSE_MISC_STR}' is a reserved expense category, and it cannot be deleted.")
+            # remove from budget, adding amnt to Misc
+            print(f"\n--- Editing {env.BUDGET_FNAME} --- ")
+            for date in budg_data.keys(): 
+                if exp_to_rem in budg_data[date].keys():
+                    amnt_to_misc = budg_data[date][exp_to_rem]
+                    budg_data[date][env.EXPENSE_MISC_STR] += amnt_to_misc
+                    budg_data[date].pop(exp_to_rem)
+                else:
+                    print("No expense in this months budget.")
+
+            print(f"--- Editing {env.OUT_EXP_DATA_TEMPL} --- ")
+            edit_df_entries(df, exp_db_data_filepath, env.EXPENSE, exp_to_rem, env.EXPENSE_MISC_STR)
+            print(f"--- Editing {env.OUT_EXPREC_DATA_TEMPL} --- ")
+            edit_df_entries(df_rec, exp_recbin_path, env.EXPENSE, exp_to_rem, env.EXPENSE_MISC_STR)
+            # write changes
+            data_help.write_to_jsonFile(budg_path, budg_data)
+            data_help.write_to_jsonFile(exp_path, exp_data)
+            data_help.write_to_jsonFile(exp_stor_data_path, exp_stor_data)
+                
+        else:
+            print(f"'{env.EXPENSE_MISC_STR}' is a reserved expense category, and it cannot be deleted.")
 
 def edit_cell_in_dfcol(db_data_filepath : str, df, col_name, opt_col=None, opt_dict=None, col_type=None):
     """
@@ -350,22 +356,23 @@ def add_expense(exp_data, exp_stor_data, exp_path, exp_stor_data_path):
     flag = False 
     while not flag:
         exps = util.format_input_to_list("Enter the expenses you wish to add: ", mode='string', quit_str='q')
-        if exps != None:
-            for exp in exps:
-                if exp not in exp_data[env.EXPENSE_DATA_KEY]:
-                    exp_data[env.EXPENSE_DATA_KEY].append(exp)
-                    data_help.write_to_jsonFile(exp_path, exp_data)
+        if exps is None:
+            return None
 
-                    user_in = util.get_user_input_for_chars(f"Do you want to add expense [{exp}] expense to some stores [y/n]? ", ['y', 'n'])
-                    if user_in == 'y':
-                        add_expenses_to_store(exp_stor_data, exp_stor_data_path, [exp])
+        for exp in exps:
+            if exp not in exp_data[env.EXPENSE_DATA_KEY]:
+                exp_data[env.EXPENSE_DATA_KEY].append(exp)
+                data_help.write_to_jsonFile(exp_path, exp_data)
 
-                    else:
-                        flag = True
+                user_in = util.get_user_input_for_chars(f"Do you want to add expense [{exp}] expense to some stores [y/n]? ", ['y', 'n'])
+                if user_in == 'y':
+                    add_expenses_to_store(exp_stor_data, exp_stor_data_path, [exp])
+
                 else:
-                    print(f"That expense already exists! Try another one. Heres the list of existing expenses: {exp_data[env.EXPENSE_DATA_KEY]}")
-        else:
-            flag = True
+                    flag = True
+            else:
+                print(f"That expense already exists! Try another one. Heres the list of existing expenses: {exp_data[env.EXPENSE_DATA_KEY]}")
+
 
 def add_expenses_to_store(exp_stor_data, exp_stor_data_path, expenses):
     """
@@ -375,7 +382,7 @@ def add_expenses_to_store(exp_stor_data, exp_stor_data_path, expenses):
         exp_stor_data_keylist : the list of keys of exp_stor_data
         expense : the expense to add to the store selected by the user
     """
-    stores = util.select_dict_keys_using_integer(exp_stor_data, "Select a store to add this expense to.", print_children=False, quit_str='q', print_aborting=True, print_vals=True)
+    stores = util.select_dict_keys_using_integer(exp_stor_data, "Select a store to add this expense to.", print_children=False, quit_str='q', print_aborting=False, print_vals=True)
     if stores != None:
         for store in stores:
             for expense in expenses:
@@ -391,37 +398,41 @@ def remove_exp_from_store(df_path, df, exp_recbin_path, df_rec, exp_stor_data, e
     Removes an expense from exp_stor_data dict, replacing the reference with user selection or misc in the dataframe
     """
     prompt = "Select which store you wish to remove expense(s) from. (q) to abort."
-    storenames = util.select_dict_keys_using_integer(exp_stor_data, prompt, print_children=False, quit_str='q', print_aborting=True, print_vals=True)
-    if storenames is not None:
-        for storename in storenames:
-            removed_expenses = util.select_indices_of_list("Select which expense(s) to remove. (q) to abort.", exp_stor_data[storename], return_matches=True, abortchar='q')
-            if removed_expenses is not None:
-                print(f"--- Editing {env.EXP_STOR_DB_FNAME} --- ")
-                for expense in removed_expenses:
-                    exp_stor_data[storename].remove(expense)
-                    print(f"Removed {expense} from {storename}.")
+    storenames = util.select_dict_keys_using_integer(exp_stor_data, prompt, print_children=False, quit_str='q', print_aborting=False, print_vals=True)
+    if storenames is None:
+        return None
+
+    for storename in storenames:
+        removed_expenses = util.select_indices_of_list("Select which expense(s) to remove. (q) to abort.", exp_stor_data[storename], return_matches=True, abortchar='q')
+        if removed_expenses is None:
+            return None
+
+        print(f"--- Editing {env.EXP_STOR_DB_FNAME} --- ")
+        for expense in removed_expenses:
+            exp_stor_data[storename].remove(expense)
+            print(f"Removed {expense} from {storename}.")
+        
+        if len(exp_stor_data[storename]) == 0: # if all was deleted, append misc into this store.
+            print(f"You deleted all expenses from {storename}, I am adding {env.EXPENSE_MISC_STR} to preserve your data.")
+            exp_stor_data[storename].append(env.EXPENSE_MISC_STR)
+            new_exp = env.EXPENSE_MISC_STR
+
+        print(f"--- Editing {env.OUT_EXP_DATA_TEMPL} & {env.OUT_EXPREC_DATA_TEMPL} --- ")
+        for rem_exp in removed_expenses:
+            if len(exp_stor_data[storename]) == 1:
+                print(f"Only expense left for '{storename}' is '{exp_stor_data[storename][0]}'. Replacing '{rem_exp}' with '{exp_stor_data[storename][0]}'.")
+                new_exp = exp_stor_data[storename][0]
+            else:
+
+                new_exp = util.select_from_list(exp_stor_data[storename], f"Which expense do you want to use to replace '{rem_exp}' in '{storename}'? (q) to quit. ", abortchar='q',
+                                                ret_match=True)
+                if new_exp is None: # user quits
+                    return None 
                 
-                if len(exp_stor_data[storename]) == 0: # if all was deleted, append misc into this store.
-                    print(f"You deleted all expenses from {storename}, I am adding {env.EXPENSE_MISC_STR} to preserve your data.")
-                    exp_stor_data[storename].append(env.EXPENSE_MISC_STR)
-                    new_exp = env.EXPENSE_MISC_STR
+            edit_df_entries_given_columns(df, df_path, env.EXPENSE, env.FILT_STORENAME, storename, rem_exp, new_exp)
+            edit_df_entries_given_columns(df_rec, exp_recbin_path, env.EXPENSE, env.FILT_STORENAME, storename, rem_exp, new_exp)
 
-                print(f"--- Editing {env.OUT_EXP_DATA_TEMPL} & {env.OUT_EXPREC_DATA_TEMPL} --- ")
-                for rem_exp in removed_expenses:
-                    if len(exp_stor_data[storename]) == 1:
-                        print(f"Only expense left for '{storename}' is '{exp_stor_data[storename][0]}'. Replacing '{rem_exp}' with '{exp_stor_data[storename][0]}'.")
-                        new_exp = exp_stor_data[storename][0]
-                    else:
-
-                        new_exp = util.select_from_list(exp_stor_data[storename], f"Which expense do you want to use to replace '{rem_exp}' in '{storename}'? (q) to quit. ", abortchar='q',
-                                                        ret_match=True)
-                        if new_exp is None: # user quits
-                            return None 
-                        
-                    edit_df_entries_given_columns(df, df_path, env.EXPENSE, env.FILT_STORENAME, storename, rem_exp, new_exp)
-                    edit_df_entries_given_columns(df_rec, exp_recbin_path, env.EXPENSE, env.FILT_STORENAME, storename, rem_exp, new_exp)
-
-                data_help.write_to_jsonFile(exp_stor_data_path, exp_stor_data)
+        data_help.write_to_jsonFile(exp_stor_data_path, exp_stor_data)
 
 def df_editor_menu(db_inc_data_fpaths, inc_recbin_path, db_exp_data_fpaths, exp_recbin_path, bankconfig=None):
     done = False
@@ -532,27 +543,29 @@ def edit_df_transaction_price(df_to_edit, df_to_edit_path, col_to_use, df_to_mov
     util.print_fulldf(df_to_edit)
     prompt = f"Select some indices from the above dataframe column '{col_to_use}' to edit: : "
     indices = util.select_indices_of_list(prompt, index_list, return_matches=True, abortchar='q', print_lst=False)
-    if indices is not None: # none type aborts
-        for index in indices:
-            reductions_index_list = df_with_reductions.index.tolist()
-            util.print_fulldf(df_with_reductions)
-            prompt = f"Which index contains the transaction you want? "
-            reduction_indices = util.select_indices_of_list(prompt, reductions_index_list, abortchar='q', return_matches=False, print_lst=False)
-            if reduction_indices is not None: # none type aborts
-                for reduction_index in reduction_indices:
-                    val = df_with_reductions.at[reduction_index,reduction_col] # get transaction val
+    if indices is None: # none type aborts
+        return None
 
-                    if df_to_edit.at[index, col_to_use] == np.nan: # check for nan value
-                        df_to_edit.at[index, col_to_use] = 0.0
+    for index in indices:
+        reductions_index_list = df_with_reductions.index.tolist()
+        util.print_fulldf(df_with_reductions)
+        prompt = f"Which index contains the transaction you want? "
+        reduction_indices = util.select_indices_of_list(prompt, reductions_index_list, abortchar='q', return_matches=False, print_lst=False)
+        if reduction_indices is not None: # none type aborts
+            for reduction_index in reduction_indices:
+                val = df_with_reductions.at[reduction_index,reduction_col] # get transaction val
 
-                    df_with_reductions.at[reduction_index, uuid_col] = df_to_edit.at[index, uuid_col]
-                    df_to_edit.at[index, col_to_use] = df_to_edit.at[index, col_to_use] + val
-                df_swap(df_to_move_from=df_with_reductions, df_to_move_to=df_to_move_reduction_to, df_to_move_from_path=df_with_reductions_path,
-                    df_to_move_to_path=df_to_move_reduction_to_path, rows=reduction_indices) # writes changes
-            else:
-                break
-        
-        data_help.write_data(df_to_edit, df_to_edit_path, sortby=env.DATE) # writes changes to the edited df.
+                if df_to_edit.at[index, col_to_use] == np.nan: # check for nan value
+                    df_to_edit.at[index, col_to_use] = 0.0
+
+                df_with_reductions.at[reduction_index, uuid_col] = df_to_edit.at[index, uuid_col]
+                df_to_edit.at[index, col_to_use] = df_to_edit.at[index, col_to_use] + val
+            df_swap(df_to_move_from=df_with_reductions, df_to_move_to=df_to_move_reduction_to, df_to_move_from_path=df_with_reductions_path,
+                df_to_move_to_path=df_to_move_reduction_to_path, rows=reduction_indices) # writes changes
+        else:
+            break
+    
+    data_help.write_data(df_to_edit, df_to_edit_path, sortby=env.DATE) # writes changes to the edited df.
     
 
             
@@ -591,22 +604,23 @@ def edit_settings(settings_path):
     while not done:
         settings = data_help.read_jsonFile(settings_path)
         setting_sels = util.select_indices_of_list(prompt, list(settings.keys()), return_matches=True, abortchar='q', print_lst=True)
-        if setting_sels is not None:
-            for setting in setting_sels:
-                if setting == env.BANK_SELECTION_KEY:
-                    value = util.select_indices_of_list("Please select from the list: ", settings[env.BANK_CHOICES_KEY], 
-                        return_matches=True, abortchar='q')
-                else:
-                    data_type = type(settings[setting])
-                    value = util.get_input_given_type(f"Enter your '{data_type}' for {setting}={settings[setting]}. ", 
-                        data_type, abortchar='q', setting=settings[setting])
-                if value is not None: # none type returned upon quit
-                    settings[setting] = value
-                    done = True
-                    data_help.write_to_jsonFile(settings_path, settings)
+        if setting_sels is None:
+            return None
+
+        for setting in setting_sels:
+            if setting == env.BANK_SELECTION_KEY:
+                value = util.select_indices_of_list("Please select from the list: ", settings[env.BANK_CHOICES_KEY], 
+                    return_matches=True, abortchar='q')
+            else:
+                data_type = type(settings[setting])
+                value = util.get_input_given_type(f"Enter your '{data_type}' for {setting}={settings[setting]}. ", 
+                    data_type, abortchar='q', setting=settings[setting])
+            if value is not None: # none type returned upon quit
+                settings[setting] = value
+                done = True
+                data_help.write_to_jsonFile(settings_path, settings)
                 
-        else:
-            done = True
+
 
 def edit_df_entries(df, df_path, column_name, old_entry, new_entry):
     """
@@ -669,23 +683,22 @@ def change_budget_amounts(budg_data, budg_path):
         print(env.OUTPUT_SEP_STR)
         prompt = "Which budget month would you like to edit eh? (q) to abort: "
         dates = util.select_indices_of_list(prompt, list(budg_data.keys()), return_matches=True, abortchar='q')
-        if dates is not None: # none type returned if user aborts
-            for date in dates:
-                print(f"--- Editing {date} ---")
-                expenses = util.select_dict_keys_using_integer(budg_data[date], "Select the expenses you wish to change: ", 
-                    print_children=False, quit_str='q', print_vals=True)
-                if expenses is not None: # quit if user says so.
-                    for exp in expenses:
-                        amnt = util.get_float_input(f"Enter the new amount for '{exp}': ", force_pos=True, roundto=2)
-                        budg_data[date][exp] = amnt
-                else:
-                    continue 
+        if dates is None: # none type returned if user aborts
+            return None
             
-            data_help.write_to_jsonFile(budg_path, budg_data)
+        for date in dates:
+            print(f"--- Editing {date} ---")
+            expenses = util.select_dict_keys_using_integer(budg_data[date], "Select the expenses you wish to change: ", 
+                print_children=False, quit_str='q', print_vals=True)
+            if expenses is not None: # quit if user says so.
+                for exp in expenses:
+                    amnt = util.get_float_input(f"Enter the new amount for '{exp}': ", force_pos=True, roundto=2)
+                    budg_data[date][exp] = amnt
+            else:
+                continue 
         
-        else:
-            done=True
-            
+        data_help.write_to_jsonFile(budg_path, budg_data)
+        
     
 
 def set_dict_keys_to_lowercase(dct_path):
