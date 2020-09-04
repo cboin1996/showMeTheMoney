@@ -47,9 +47,18 @@ def initialize_csvs(list_of_csvs, list_of_cols):
 
 def initialize_settings(settings_path):
     settings = data_help.read_jsonFile(settings_path)
-    for key in env.SETTINGS_KEYS:
+    for key in env.SETTINGS_TEMPL.keys(): # add keys in globvar
         if key not in settings.keys():
             settings[key] = env.SETTINGS_TEMPL[key]
+    
+    keys_to_rem = []
+    for key in settings.keys(): # remove keys not in globvar
+        if key not in env.SETTINGS_TEMPL.keys():
+            keys_to_rem.append(key)
+    
+    for key in keys_to_rem:
+        settings.pop(key)
+
     data_help.write_to_jsonFile(settings_path, settings)
 
 def find_data_paths(ndata_path, adata_path, db_exp_data_path, db_inc_data_path, output_str=""):
@@ -297,13 +306,13 @@ def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor
     freq, freq_desc = get_plotting_frequency()
     if freq ==  None:
         return None
-    if freq == 'M' or freq == 'Y':
+    if freq == env.MONTH_FREQ or freq == env.YEAR_FREQ:
         plot_for_date(years, dont_print_cols, exp_dict, df_inc, df_budg,df_exp, settings, notes_dict, freq=freq, freq_desc=freq_desc)
     else:
         plot_for_date(years, dont_print_cols, exp_dict, df_inc, df_budg,df_exp, 
-            settings, notes_dict, freq='M', freq_desc='month', override_show=True)
+            settings, notes_dict, freq=env.MONTH_FREQ, freq_desc='month', override_show=True)
         plot_for_date(years, dont_print_cols, exp_dict, df_inc, 
-            df_budg,df_exp, settings, notes_dict, freq='Y', freq_desc='year')
+            df_budg,df_exp, settings, notes_dict, freq=env.YEAR_FREQ, freq_desc='year')
 
 def get_plotting_frequency():
     sel = util.get_user_input_for_chars("View by month (m) by year (y) or both (b)? (q) aborts. ", ['m', 'y', 'b', 'q'])
@@ -311,9 +320,9 @@ def get_plotting_frequency():
     if sel == 'q':
         return None 
     elif sel == 'm':
-        return sel.upper(), 'month'
+        return env.MONTH_FREQ, 'month'
     elif sel == 'y':
-        return sel.upper(), 'year'
+        return env.YEAR_FREQ, 'year'
     elif sel == 'b':
         return sel, 'both'
 
@@ -368,10 +377,11 @@ def plot_for_date(years, dont_print_cols, exp_dict, df_inc, df_budg, df_exp, set
 
     budg_plotter(df_exp_budg_per_freq, df_exp_budg_per_freq.groupby(level=0).sum(), df_inc_per_freq, settings=settings, title_templ=title_templ_for_budg, 
                 show=show_plot1, sort_by_level=0, notes=notes_dict, subtractable_expenses=subtractable_expenses, tbox_color='wheat', tbox_style='round', 
-                tbox_alpha=0.5, year=years)
+                tbox_alpha=0.5, year=years, freq=freq)
     title_templ_for_stor_plt = "%s\nIncome: %s | Expenses: %s | Budget: %s\nNet Income: %s | Budget Rem.: %s"
     budg_plotter(df_exp_stor_per_freq, df_exp_budg_per_freq.groupby(level=0).sum(), df_inc_per_freq, settings=settings, title_templ=title_templ_for_stor_plt, 
-                show=show_plot2, sort_by_level=0, notes=notes_dict, tbox_color='wheat', tbox_style='round', tbox_alpha=0.5,  year=years)
+                show=show_plot2, sort_by_level=0, notes=notes_dict, tbox_color='wheat', tbox_style='round', tbox_alpha=0.5,  year=years,
+                freq=freq)
 
 def get_totals(budget_df, df_inc, date_key=None):
     if date_key == None:
@@ -441,7 +451,7 @@ def get_title(title_templ, df, subtractables, inc_tot, exp_tot, net_inc, budg_to
 
 def budg_plotter(df_to_plot, budget_df, df_inc, settings = None, title_templ="", show=True,
                  sort_by_level=None, notes=None, subtractable_expenses=None, tbox_color=None, tbox_style=None, tbox_alpha=None,
-                 year=None):
+                 year=None, freq=None):
     """
     Given a multindex dataframe, plots the data
     Args:
@@ -460,11 +470,17 @@ def budg_plotter(df_to_plot, budget_df, df_inc, settings = None, title_templ="",
         year : the numeric year
     """
     figsize=settings[env.PLOT_SIZE_KEY]
-    nrows=settings[env.NUM_ROWS_KEY]
-    ncols=settings[env.NUM_COLS_KEY]
-    subfigs_per_fig=settings[env.NUM_ROWS_KEY]*settings[env.NUM_COLS_KEY]
+    if freq == env.YEAR_FREQ:
+        nrows=settings[env.NUM_ROWS_KEY]
+        ncols=settings[env.NUM_COLS_KEY]
+    elif freq == env.MONTH_FREQ:
+        nrows=settings[env.MONTH_NUM_ROWS_KEY]
+        ncols=settings[env.MONTH_NUM_COLS_KEY]
+
+    subfigs_per_fig=nrows*ncols
     parent_titl_font_size = settings[env.PA_FIG_TITL_SIZE_KEY]
     subfig_titl_font_size = settings[env.SUB_FIG_TITL_SIZE_KEY]
+    layout_bounds = [0.0, 0.03, 1.0, 0.95]
 
     plot_idx = 1
     # allows multiindex slicing once sorted.
@@ -473,6 +489,8 @@ def budg_plotter(df_to_plot, budget_df, df_inc, settings = None, title_templ="",
     
     sup_title = get_title(title_templ, df_to_plot, subtractable_expenses, all_inc_tot,
                                         all_exp_tot, all_net_inc, all_budg_tot, all_budg_re, f"{year} summary.")
+    
+    
     plt.figure(figsize=figsize, facecolor='white')
 
     for date, sub_df in df_to_plot.groupby(level=0):
@@ -481,7 +499,7 @@ def budg_plotter(df_to_plot, budget_df, df_inc, settings = None, title_templ="",
 
         if plot_idx > subfigs_per_fig:
             # get global title.
-            plt.tight_layout()
+            plt.tight_layout(rect=layout_bounds)
             plt.suptitle(sup_title, size=parent_titl_font_size) # title for previous figure
             plt.figure(figsize=figsize, facecolor='white') # create new figure
             plot_idx = 1
@@ -524,7 +542,7 @@ def budg_plotter(df_to_plot, budget_df, df_inc, settings = None, title_templ="",
 
         plot_idx += 1
 
-    plt.tight_layout()
+    plt.tight_layout(rect=layout_bounds)
     plt.suptitle(sup_title, size=parent_titl_font_size)
 
     if show == True:
@@ -608,9 +626,9 @@ if __name__ == "__main__":
     # initialize settings
     initialize_settings(settings_path)
 
-    bank_sel_json = data_help.read_jsonFile(settings_path)
+    settings = data_help.read_jsonFile(settings_path)
 
-    bankconfig = util.get_bank_conf(bank_sel_json, settings_path)
+    bankconfig = util.get_bank_conf(settings, settings_path)
 
     initialize_csvs([exp_recbin_path, inc_recbin_path], 
                     [bankconfig.exp_colnames, bankconfig.inc_colnames])
@@ -635,7 +653,7 @@ if __name__ == "__main__":
             if user_in == 'i':
                 backup_data([db_data_path, lib_data_path], backup_folderpath)
                 if index > 0: # reload bank config after first iteration.
-                    bankconfigreloaded = util.get_bank_conf(bank_sel_json, settings_path, abortchar='q')
+                    bankconfigreloaded = util.get_bank_conf(settings, settings_path, abortchar='q')
                 if bankconfigreloaded is not None: # check for None type aborts.
                     bankconfig = bankconfigreloaded
                     if check_for_data(ndata_filepaths, db_exp_data_fpaths, db_inc_data_fpaths, adata_path,

@@ -43,12 +43,12 @@ class Bankconfig:
         self.inc_dtypes = inc_dtypes
         self.selection = selection
 
-def get_bank_conf(bank_sel_json, settings_path, abortchar=None):
+def get_bank_conf(settings, settings_path, abortchar=None):
     bankconfig = None
-    if len(bank_sel_json[env.BANK_SELECTION_KEY]) == 1:
-        bank_sel = bank_sel_json[env.BANK_SELECTION_KEY][0]
+    if len(settings[env.BANK_SELECTION_KEY]) == 1:
+        bank_sel = settings[env.BANK_SELECTION_KEY][0]
     else:
-        bank_sel = select_from_list(bank_sel_json[env.BANK_SELECTION_KEY], "Which bank would you like to use today? ", ret_match=True, abortchar=abortchar)
+        bank_sel = select_from_list(settings[env.BANK_SELECTION_KEY], "Which bank would you like to use today? ", ret_match=True, abortchar=abortchar)
     
     if bank_sel == env.SCOTIABANK:
         bankconfig = Bankconfig(
@@ -382,6 +382,7 @@ def format_input_to_list(prompt, mode='string', quit_str=None, sel_all=None):
             match = re.search(r"[\d\s]+", user_in) 
         elif mode == 'string':
             match = re.search(r"[\w\s]+", user_in)
+
         if match:
             flag = True
             lst = match.group(0).split(' ')
@@ -534,6 +535,7 @@ def validate_lst_type(lst, typ):
         if type(item) != typ:
             return False
     return True
+
 def get_input_given_type(prompt, data_type, abortchar='q', setting=None):
     done = False 
     while not done:
@@ -544,6 +546,7 @@ def get_input_given_type(prompt, data_type, abortchar='q', setting=None):
                     user_in = format_input_to_list(prompt, mode='integer')
                 elif validate_lst_type(setting, str):
                     user_in = format_input_to_list(prompt, mode='string')
+
             else:
                 user_in = input(prompt)
             if user_in == 'q':
