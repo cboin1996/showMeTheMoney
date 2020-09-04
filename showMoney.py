@@ -264,10 +264,10 @@ def choose_months_in_dfs(df_exp,df_budg,df_inc, years):
         months_to_show = util.select_indices_of_list(f"Which months in {year} do you want to see? 'a' for all: ", list(months), return_matches=True,
                                                         abortchar='q', ret_all_char='a')
         if months_to_show == None:
-            return None, None, None
+            return None, None, None, None
         df_exp_out, df_budg_out, df_inc_out = data_help.drop_dt_indices_not_in_selection(months_to_show, months, df_exp, df_budg, df_inc)
     
-    return df_exp_out, df_budg_out, df_inc_out
+    return df_exp_out, df_budg_out, df_inc_out, months_to_show
 
 def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, notes_path, exp_path, 
                     dont_print_cols=None, bankconfig=None, settings_path=None):
@@ -319,20 +319,21 @@ def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor
         return None
 
     if freq == env.YEAR_FREQ:
-        plot_for_date(years, dont_print_cols, exp_dict, df_inc, df_budg,df_exp, settings, notes_dict, freq=freq, freq_desc=freq_desc)
+        plot_for_date(years, dont_print_cols, exp_dict, df_inc, df_budg,df_exp, settings, 
+            notes_dict, freq=freq, freq_desc=freq_desc)
     elif freq == env.MONTH_FREQ:
-        df_exp, df_budg, df_inc = choose_months_in_dfs(df_exp,df_budg,df_inc, years_to_show)
+        df_exp, df_budg, df_inc, months = choose_months_in_dfs(df_exp,df_budg,df_inc, years_to_show)
         if df_exp is None:
             return None
         plot_for_date(years, dont_print_cols, exp_dict, df_inc, df_budg,df_exp, 
-            settings, notes_dict, freq=env.MONTH_FREQ, freq_desc=freq_desc, override_show=False)
+            settings, notes_dict, freq=env.MONTH_FREQ, freq_desc=freq_desc, months=months)
     else:
  
-        df_exp_mnth, df_budg_mnth, df_inc_mnth = choose_months_in_dfs(df_exp,df_budg,df_inc, years_to_show)
+        df_exp_mnth, df_budg_mnth, df_inc_mnth, months = choose_months_in_dfs(df_exp,df_budg,df_inc, years_to_show)
         if df_exp_mnth is None:
             return None
         plot_for_date(years, dont_print_cols, exp_dict, df_inc_mnth, df_budg_mnth, df_exp_mnth, 
-            settings, notes_dict, freq=env.MONTH_FREQ, freq_desc='month', override_show=True)
+            settings, notes_dict, freq=env.MONTH_FREQ, freq_desc='month', override_show=True, months=months)
         plot_for_date(years, dont_print_cols, exp_dict, df_inc, 
             df_budg,df_exp, settings, notes_dict, freq=env.YEAR_FREQ, freq_desc='year')
 
@@ -350,13 +351,18 @@ def get_plotting_frequency():
         return sel, 'both'
 
 def plot_for_date(years, dont_print_cols, exp_dict, df_inc, df_budg, df_exp, settings, notes_dict, freq, freq_desc,
-                    override_show=False):
+                    override_show=False, months=None):
     show_plot1 = False
     show_plot2 = True
     if override_show == True:
         show_plot2 = False
+    
+    if months is not None:
+        time_flag = f"{months}"
+    else:
+        time_flag = f"{years}"
   # filter for the year
-    print(f"\nAll Income in {years}. ")
+    print(f"\nAll Income in {time_flag}. ")
     util.print_fulldf(df_inc, dont_print_cols=dont_print_cols)
     print(f"Income grouped by {freq_desc} and store")
     df_inc_per_freq_stores = df_inc.groupby(
@@ -370,7 +376,7 @@ def plot_for_date(years, dont_print_cols, exp_dict, df_inc, df_budg, df_exp, set
     df_budg_per_freq = df_budg_per_freq.stack().apply(pd.Series).rename(
         columns={0: env.BUDGET})  # collapse data into multindex frame
 
-    print(f"All expense transactions in {years}.")
+    print(f"All expense transactions in {time_flag}.")
     util.print_fulldf(df_exp, dont_print_cols=dont_print_cols)
 
     print(f"Totals by store grouped per {freq_desc}.")
