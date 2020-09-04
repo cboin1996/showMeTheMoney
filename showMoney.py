@@ -327,7 +327,7 @@ def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor
             return None
         plot_for_date(years, dont_print_cols, exp_dict, df_inc, df_budg,df_exp, 
             settings, notes_dict, freq=env.MONTH_FREQ, freq_desc=freq_desc, months=months)
-    else:
+    elif freq == 'b':
  
         df_exp_mnth, df_budg_mnth, df_inc_mnth, months = choose_months_in_dfs(df_exp,df_budg,df_inc, years_to_show)
         if df_exp_mnth is None:
@@ -336,7 +336,9 @@ def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor
             settings, notes_dict, freq=env.MONTH_FREQ, freq_desc='month', override_show=True, months=months)
         plot_for_date(years, dont_print_cols, exp_dict, df_inc, 
             df_budg,df_exp, settings, notes_dict, freq=env.YEAR_FREQ, freq_desc='year')
-
+    
+    else:
+        pass
 
 def get_plotting_frequency():
     sel = util.get_user_input_for_chars("View by month (m) by year (y) or both (b)? (q) aborts. ", ['m', 'y', 'b', 'q'])
