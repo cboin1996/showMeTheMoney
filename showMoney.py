@@ -298,27 +298,45 @@ def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor
     
     if years_to_show is None:  # select_indices_of_list returns None if user aborts 
         return None
-    elif years_to_show != years:
-        df_exp.drop(years_to_show, inplace=True)
-        df_inc.drop(years_to_show, inplace=True)
-        df_budg.drop(years_to_show, inplace=True)
+
+    df_exp, df_budg, df_inc = data_help.drop_dt_indices_not_in_selection(years_to_show, years, df_exp, df_budg, df_inc)
 
     freq, freq_desc = get_plotting_frequency()
     if freq ==  None:
         return None
-    if freq == env.MONTH_FREQ or freq == env.YEAR_FREQ:
+
+    if freq == env.YEAR_FREQ:
         plot_for_date(years, dont_print_cols, exp_dict, df_inc, df_budg,df_exp, settings, notes_dict, freq=freq, freq_desc=freq_desc)
-    else:
+    elif freq == env.MONTH_FREQ:
+        for year_to_show in years_to_show:
+            months = data_help.extract_year_month(df_exp[year_to_show].index.to_series())
+            months_to_show = util.select_indices_of_list(f"Which months in {year_to_show} do you want to see? 'a' for all: ", list(months), return_matches=True,
+                                                            abortchar='q', ret_all_char='a')
+            if months_to_show == None:
+                return None
+            df_exp, df_budg, df_inc = data_help.drop_dt_indices_not_in_selection(months_to_show, months, df_exp, df_budg, df_inc)
+
         plot_for_date(years, dont_print_cols, exp_dict, df_inc, df_budg,df_exp, 
+            settings, notes_dict, freq=env.MONTH_FREQ, freq_desc=freq_desc, override_show=False)
+    else:
+        for year_to_show in years_to_show:
+            months = data_help.extract_year_month(df_exp[year_to_show].index.to_series())
+            months_to_show = util.select_indices_of_list(f"Which months in {year_to_show} do you want in your monthly plots? 'a' for all: ", list(months), return_matches=True,
+                                                            abortchar='q', ret_all_char='a')
+            
+            df_exp_mnth, df_budg_mnth, df_inc_mnth = data_help.drop_dt_indices_not_in_selection(months_to_show, months, df_exp, df_budg, df_inc)
+
+        plot_for_date(years, dont_print_cols, exp_dict, df_inc_mnth, df_budg_mnth, df_exp_mnth, 
             settings, notes_dict, freq=env.MONTH_FREQ, freq_desc='month', override_show=True)
         plot_for_date(years, dont_print_cols, exp_dict, df_inc, 
             df_budg,df_exp, settings, notes_dict, freq=env.YEAR_FREQ, freq_desc='year')
+
 
 def get_plotting_frequency():
     sel = util.get_user_input_for_chars("View by month (m) by year (y) or both (b)? (q) aborts. ", ['m', 'y', 'b', 'q'])
 
     if sel == 'q':
-        return None 
+        return None , None
     elif sel == 'm':
         return env.MONTH_FREQ, 'month'
     elif sel == 'y':
@@ -377,11 +395,11 @@ def plot_for_date(years, dont_print_cols, exp_dict, df_inc, df_budg, df_exp, set
 
     budg_plotter(df_exp_budg_per_freq, df_exp_budg_per_freq.groupby(level=0).sum(), df_inc_per_freq, settings=settings, title_templ=title_templ_for_budg, 
                 show=show_plot1, sort_by_level=0, notes=notes_dict, subtractable_expenses=subtractable_expenses, tbox_color='wheat', tbox_style='round', 
-                tbox_alpha=0.5, year=years, freq=freq)
+                tbox_alpha=0.5, year=years, freq_desc=freq_desc)
     title_templ_for_stor_plt = "%s\nIncome: %s | Expenses: %s | Budget: %s\nNet Income: %s | Budget Rem.: %s"
     budg_plotter(df_exp_stor_per_freq, df_exp_budg_per_freq.groupby(level=0).sum(), df_inc_per_freq, settings=settings, title_templ=title_templ_for_stor_plt, 
                 show=show_plot2, sort_by_level=0, notes=notes_dict, tbox_color='wheat', tbox_style='round', tbox_alpha=0.5,  year=years,
-                freq=freq)
+                freq_desc=freq_desc)
 
 def get_totals(budget_df, df_inc, date_key=None):
     if date_key == None:
@@ -451,7 +469,7 @@ def get_title(title_templ, df, subtractables, inc_tot, exp_tot, net_inc, budg_to
 
 def budg_plotter(df_to_plot, budget_df, df_inc, settings = None, title_templ="", show=True,
                  sort_by_level=None, notes=None, subtractable_expenses=None, tbox_color=None, tbox_style=None, tbox_alpha=None,
-                 year=None, freq=None):
+                 year=None, freq_desc=None):
     """
     Given a multindex dataframe, plots the data
     Args:
@@ -470,10 +488,10 @@ def budg_plotter(df_to_plot, budget_df, df_inc, settings = None, title_templ="",
         year : the numeric year
     """
     figsize=settings[env.PLOT_SIZE_KEY]
-    if freq == env.YEAR_FREQ:
+    if freq_desc == 'year':
         nrows=settings[env.NUM_ROWS_KEY]
         ncols=settings[env.NUM_COLS_KEY]
-    elif freq == env.MONTH_FREQ:
+    elif freq_desc == 'month':
         nrows=settings[env.MONTH_NUM_ROWS_KEY]
         ncols=settings[env.MONTH_NUM_COLS_KEY]
 
@@ -515,7 +533,7 @@ def budg_plotter(df_to_plot, budget_df, df_inc, settings = None, title_templ="",
         # get the title
         exp_tot, budg_tot, budg_re, net_inc, inc_tot = get_totals(budget_df, df_inc, date_key)
         title = get_title(title_templ, df_to_plot, subtractable_expenses, inc_tot,
-                          exp_tot, net_inc, budg_tot, budg_re, f"Ending: {date.month_name()} {date.year}", 
+                          exp_tot, net_inc, budg_tot, budg_re, f"{freq_desc} ending: {date.month_name()} {date.year}", 
                           str_date)
 
         ax.set_title(title, size=subfig_titl_font_size)

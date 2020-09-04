@@ -282,6 +282,14 @@ def extract_months(date_col, start=True):
 
     return set(date_list)
 
+def extract_year_month(date_col, str_format=True):
+    date_col.drop_duplicates(inplace=True)
+    months = list(set(date_col.dt.to_period('M')))
+    if str_format == True:
+        ret = [str(month) for month in months]
+    else:
+        ret = months
+    return ret
 
 def extract_years(date_col, str_format=True):
     """
@@ -294,6 +302,21 @@ def extract_years(date_col, str_format=True):
         ret = years
     return ret
 
+def drop_dt_indices_not_in_selection(indx_sels, indxs, df1, df2, df3):
+
+    if indx_sels != indxs:
+        df1out = df1.copy()
+        df2out = df2.copy()
+        df3out = df3.copy()
+        for indx in indxs: # get the indices to drop
+            if indx not in indx_sels:
+                df1out = df1out.drop(df1out.loc[indx].index)
+                df2out = df2out.drop(df2out.loc[indx].index)
+                df3out = df3out.drop(df3out.loc[indx].index)
+        
+        return df1out, df2out, df3out
+
+    return df1, df2, df3
 
 def modify_dict_key(dct, old_key, new_key):
     """
