@@ -258,6 +258,16 @@ def get_income(db_inc_data_fpaths: list, dont_print_cols=None, bankconfig=None):
     print("\nFinished gathering your income data: \n")
     util.print_fulldf(inc_df, dont_print_cols)
 
+def choose_months_in_dfs(df_exp,df_budg,df_inc, years):
+    for year in years:
+        months = data_help.extract_year_month(df_exp[year].index.to_series())
+        months_to_show = util.select_indices_of_list(f"Which months in {year} do you want to see? 'a' for all: ", list(months), return_matches=True,
+                                                        abortchar='q', ret_all_char='a')
+        if months_to_show == None:
+            return None, None, None
+        df_exp_out, df_budg_out, df_inc_out = data_help.drop_dt_indices_not_in_selection(months_to_show, months, df_exp, df_budg, df_inc)
+    
+    return df_exp_out, df_budg_out, df_inc_out
 
 def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, notes_path, exp_path, 
                     dont_print_cols=None, bankconfig=None, settings_path=None):
@@ -300,6 +310,9 @@ def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor
         return None
 
     df_exp, df_budg, df_inc = data_help.drop_dt_indices_not_in_selection(years_to_show, years, df_exp, df_budg, df_inc)
+    
+    if df_exp is None: # quit condition
+        return None
 
     freq, freq_desc = get_plotting_frequency()
     if freq ==  None:
@@ -308,24 +321,16 @@ def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor
     if freq == env.YEAR_FREQ:
         plot_for_date(years, dont_print_cols, exp_dict, df_inc, df_budg,df_exp, settings, notes_dict, freq=freq, freq_desc=freq_desc)
     elif freq == env.MONTH_FREQ:
-        for year_to_show in years_to_show:
-            months = data_help.extract_year_month(df_exp[year_to_show].index.to_series())
-            months_to_show = util.select_indices_of_list(f"Which months in {year_to_show} do you want to see? 'a' for all: ", list(months), return_matches=True,
-                                                            abortchar='q', ret_all_char='a')
-            if months_to_show == None:
-                return None
-            df_exp, df_budg, df_inc = data_help.drop_dt_indices_not_in_selection(months_to_show, months, df_exp, df_budg, df_inc)
-
+        df_exp, df_budg, df_inc = choose_months_in_dfs(df_exp,df_budg,df_inc, years_to_show)
+        if df_exp is None:
+            return None
         plot_for_date(years, dont_print_cols, exp_dict, df_inc, df_budg,df_exp, 
             settings, notes_dict, freq=env.MONTH_FREQ, freq_desc=freq_desc, override_show=False)
     else:
-        for year_to_show in years_to_show:
-            months = data_help.extract_year_month(df_exp[year_to_show].index.to_series())
-            months_to_show = util.select_indices_of_list(f"Which months in {year_to_show} do you want in your monthly plots? 'a' for all: ", list(months), return_matches=True,
-                                                            abortchar='q', ret_all_char='a')
-            
-            df_exp_mnth, df_budg_mnth, df_inc_mnth = data_help.drop_dt_indices_not_in_selection(months_to_show, months, df_exp, df_budg, df_inc)
-
+ 
+        df_exp_mnth, df_budg_mnth, df_inc_mnth = choose_months_in_dfs(df_exp,df_budg,df_inc, years_to_show)
+        if df_exp_mnth is None:
+            return None
         plot_for_date(years, dont_print_cols, exp_dict, df_inc_mnth, df_budg_mnth, df_exp_mnth, 
             settings, notes_dict, freq=env.MONTH_FREQ, freq_desc='month', override_show=True)
         plot_for_date(years, dont_print_cols, exp_dict, df_inc, 
