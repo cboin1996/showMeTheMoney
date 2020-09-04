@@ -524,6 +524,11 @@ def budg_plotter(df_to_plot, budget_df, df_inc, settings = None, title_templ="",
     
     plt.figure(figsize=figsize, facecolor='white')
 
+    if len(df_to_plot.groupby(level=0)) == 1:
+        subfigs_per_fig = 1
+        nrows = 1
+        ncols = 1
+
     for date, sub_df in df_to_plot.groupby(level=0):
         str_date = date.strftime("%Y-%m-%d")
         date_key = f"{date.year}-{date.month}"
