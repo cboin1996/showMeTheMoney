@@ -36,14 +36,13 @@ def choose_bank(json_path: str):
     """
     Prompt user for banks
     """
-    bank_json = data_help.read_jsonFile(json_path)
-    if env.BANK_SELECTION_KEY not in bank_json.keys():
+    settings_json = data_help.read_jsonFile(json_path)
+    if env.BANK_SELECTION_KEY not in settings_json.keys():
         prompt = f"Please choose your bank(s) from the list of banks: "
         choices = util.select_indices_of_list(prompt,
             env.BANK_OPTIONS, return_matches=True)
-        bank_json[env.BANK_SELECTION_KEY] = choices
-        bank_json[env.BANK_CHOICES_KEY] = env.BANK_OPTIONS
-        data_help.write_to_jsonFile(json_path, bank_json)
+        settings_json[env.BANK_SELECTION_KEY] = choices
+        data_help.write_to_jsonFile(json_path, settings_json)
 
 
 def declare_new_budget(date, exp_data):
@@ -125,7 +124,8 @@ def get_budgets(budg_path, exp_path, dates=None):
 
                 if user_in == 'w':
                     key = util.select_dict_key_using_integer(
-                        exp_budg, "Please select a budget to copy: ")
+                            exp_budg, "Please select a budget to copy: ", print_children=True, print_vals=False, 
+                            print_child_vals=True)
                     exp_budg[date] = exp_budg[key]
                 elif user_in == 'n':
                     exp_budg[date] = declare_new_budget(date, exp_data)
@@ -137,7 +137,7 @@ def get_budgets(budg_path, exp_path, dates=None):
         else:
             print(f"Your monthly budget for {date} is: ")
 
-        util.print_simple_dict(exp_budg[date])
+        util.print_simple_dict(exp_budg[date], print_vals=True)
 
     data_help.write_to_jsonFile(budg_path, exp_budg)
     return

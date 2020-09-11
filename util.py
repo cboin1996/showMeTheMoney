@@ -43,12 +43,12 @@ class Bankconfig:
         self.inc_dtypes = inc_dtypes
         self.selection = selection
 
-def get_bank_conf(bank_sel_json, settings_path, abortchar=None):
+def get_bank_conf(settings, settings_path, abortchar=None):
     bankconfig = None
-    if len(bank_sel_json[env.BANK_SELECTION_KEY]) == 1:
-        bank_sel = bank_sel_json[env.BANK_SELECTION_KEY][0]
+    if len(settings[env.BANK_SELECTION_KEY]) == 1:
+        bank_sel = settings[env.BANK_SELECTION_KEY][0]
     else:
-        bank_sel = select_from_list(bank_sel_json[env.BANK_SELECTION_KEY], "Which bank would you like to use today? ", ret_match=True, abortchar=abortchar)
+        bank_sel = select_from_list(settings[env.BANK_SELECTION_KEY], "Which bank would you like to use today? ", ret_match=True, abortchar=abortchar)
     
     if bank_sel == env.SCOTIABANK:
         bankconfig = Bankconfig(
@@ -236,7 +236,7 @@ def select_from_list(lst, prompt, abortchar=None, ret_match=False, print_lst=Tru
         user_sel = lst[user_sel]
     return user_sel 
 
-def print_sorted_dict(dct, keys_list, print_vals=False, print_children=False):
+def print_sorted_dict(dct, keys_list, print_vals=False, print_children=False, print_child_vals=False):
     for idx, key in enumerate(keys_list):
         output = f"[{idx}] - {key}"
         if print_vals == True:
@@ -244,9 +244,9 @@ def print_sorted_dict(dct, keys_list, print_vals=False, print_children=False):
         print(output)
         
         if print_children == True:
-            print_simple_dict(dct[key])
+            print_simple_dict(dct[key], print_child_vals)
 
-def select_dict_key_using_integer(dct, prompt, print_children=True, quit_str='', print_aborting=True, print_vals=False):
+def select_dict_key_using_integer(dct, prompt, print_children=True, quit_str='', print_aborting=True, print_vals=False, print_child_vals=False):
     """
     Returns a key from the dictionary that a user selects using an integer index. Funny eh?
     params:
@@ -256,7 +256,7 @@ def select_dict_key_using_integer(dct, prompt, print_children=True, quit_str='',
     """
     keys_list = list(dct.keys())
     keys_list.sort()
-    print_sorted_dict(dct, keys_list, print_vals=print_vals, print_children=print_children)
+    print_sorted_dict(dct, keys_list, print_vals=print_vals, print_children=print_children, print_child_vals=print_child_vals)
     
     flag = False
     while not flag:
@@ -323,7 +323,7 @@ def print_simple_dict(dct, print_vals=False):
     for k, v in dct.items():
         output = f"\t[{i}] {k} "
         if print_vals == True:
-            output = output + ": {v}"
+            output = output + f": {v}"
         print(output)
         i += 1
 
@@ -359,7 +359,7 @@ def prompt_with_warning(prompt, ret_lowercase=True):
     
     return user_in
 
-def format_input_to_list(prompt, mode='string', quit_str=None):
+def format_input_to_list(prompt, mode='string', quit_str=None, sel_all=None):
     """
     Used for getting the words in a list and verifying they are all strings
     params:
@@ -376,10 +376,13 @@ def format_input_to_list(prompt, mode='string', quit_str=None):
         if user_in == quit_str:
             print("Aborting.")
             return
+        if user_in == sel_all:
+            return sel_all
         if mode == 'integer':
             match = re.search(r"[\d\s]+", user_in) 
         elif mode == 'string':
             match = re.search(r"[\w\s]+", user_in)
+
         if match:
             flag = True
             lst = match.group(0).split(' ')
@@ -414,7 +417,7 @@ def select_item_not_in_list(prompt, lst, ignorecase=True, abortchar=None):
     
     return user_in
 
-def select_indices_of_list(prompt='', list_to_compare_to=[], return_matches=False, abortchar=None, print_lst=True):
+def select_indices_of_list(prompt='', list_to_compare_to=[], return_matches=False, abortchar=None, print_lst=True, ret_all_char=None):
     """
     Gets user input for certain elements of a list
     params:
@@ -430,11 +433,14 @@ def select_indices_of_list(prompt='', list_to_compare_to=[], return_matches=Fals
         print_lst_with_index(list_to_compare_to)
     while success == False:
         try:
-            user_input = format_input_to_list(prompt, mode='integer', quit_str=abortchar)
+            user_input = format_input_to_list(prompt, mode='integer', quit_str=abortchar, sel_all=ret_all_char)
             if user_input == None:
                 print("Aborting.")
                 return None
             
+            elif user_input == ret_all_char:
+                return list_to_compare_to
+                
             for i, integer in enumerate(user_input): # validate each character
                 if integer < len(list_to_compare_to) and integer >= 0:
                     selections.append(integer)
@@ -529,6 +535,7 @@ def validate_lst_type(lst, typ):
         if type(item) != typ:
             return False
     return True
+
 def get_input_given_type(prompt, data_type, abortchar='q', setting=None):
     done = False 
     while not done:
@@ -539,6 +546,7 @@ def get_input_given_type(prompt, data_type, abortchar='q', setting=None):
                     user_in = format_input_to_list(prompt, mode='integer')
                 elif validate_lst_type(setting, str):
                     user_in = format_input_to_list(prompt, mode='string')
+
             else:
                 user_in = input(prompt)
             if user_in == 'q':

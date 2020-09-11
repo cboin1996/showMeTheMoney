@@ -105,22 +105,33 @@ RBC_EXP_DTYPES = {DATE: 'str', AMOUNT: 'float', ADJUSTMENT: 'float',
                   BANK_STORENAME: "str", FILT_STORENAME: "str", EXPENSE: 'str', EXP_UUID: "str", INC_UUID: "str"}
 RBC_INC_DTYPES = {DATE: 'str', AMOUNT: 'float', ADJUSTMENT: 'float',
                    BANK_STORENAME: "str", INC_UUID: "str", EXP_UUID: "str"}
-# Bank Database Options
-BANK_OPTIONS = [SCOTIABANK, CIBC, BMO, RBC]
-BANK_CHOICES_KEY = "bank options"
-BANK_SELECTION_KEY = 'bank selections'
+
 
 # Common Across bank Dataframe Types
 pdates_colname = [DATE]
 
-# Settings options
+""" Settings options """
+
+# Bank Database Options
+BANK_OPTIONS = [SCOTIABANK, CIBC, BMO, RBC]
+BANK_CHOICES_KEY = "bank options"
+BANK_SELECTION_KEY = "selected banks"
+
 PLOT_SIZE_KEY = "Figure Size"
 PLOT_SIZE_DEFAULT = (15, 12)
 NUM_ROWS_KEY = "number of rows"
-NUM_ROWS_DEFAULT = 3
+NUM_ROWS_DEFAULT = 1
 NUM_COLS_KEY = "number of columns"
 NUM_COLS_DEFAULT = 1
+PA_FIG_TITL_SIZE_KEY = "Parent figure title size"
+PA_FIG_TITL_SIZE_DEFAULT = 8
+SUB_FIG_TITL_SIZE_KEY = "Subfigures title size"
+SUB_FIG_TITL_SIZE_DEFAULT = 12
 
+MONTH_NUM_ROWS_KEY = "monthly plots number of rows"
+MONTH_NUM_ROWS_DEFAULT = 2
+MONTH_NUM_COLS_KEY = "monthly plots number of columns"
+MONTH_NUM_COLS_DEFAULT = 2
 
 
 def mydateparser(x): return pd.datetime.strptime(x, "%Y-%m-%d")
@@ -181,15 +192,17 @@ EXP_FNAME = 'expenses.json'
 NOTES_FNAME = 'monthly_notes.json'
 SETTINGS_JSON_NAME = 'settings.json'
 
-SETTINGS_KEYS = [PLOT_SIZE_KEY, # used for initializing settings keys in settings.json
-                NUM_ROWS_KEY,
-                NUM_COLS_KEY,
-                ]
-SETTINGS_TEMPL = {
-                    BANK_CHOICES_KEY: [BANK_OPTIONS],
+
+SETTINGS_TEMPL = {  
+                    BANK_SELECTION_KEY : [],
+                    BANK_CHOICES_KEY: BANK_OPTIONS,
                     PLOT_SIZE_KEY: PLOT_SIZE_DEFAULT,
                     NUM_ROWS_KEY: NUM_ROWS_DEFAULT,
                     NUM_COLS_KEY: NUM_COLS_DEFAULT,       
+                    PA_FIG_TITL_SIZE_KEY : PA_FIG_TITL_SIZE_DEFAULT,
+                    SUB_FIG_TITL_SIZE_KEY : SUB_FIG_TITL_SIZE_DEFAULT,
+                    MONTH_NUM_ROWS_KEY : MONTH_NUM_ROWS_DEFAULT,
+                    MONTH_NUM_COLS_KEY : MONTH_NUM_COLS_DEFAULT,
 }
 EXPENSE_DATA_KEY = 'expense'
 BUDGET_TOTAL_KEY = 'total'
@@ -200,3 +213,8 @@ EXPENSE_MISC_STR = "Misc"
 MISC_POS_VALUES = ['misc', 'misc.', 'miscellaneous', 'miscellaneous.']
 
 OUTPUT_SEP_STR = "--- --- --- --- --- ---"
+
+""" Plotting Config"""
+MONTH_FREQ = 'M'
+YEAR_FREQ = 'Y'
+
