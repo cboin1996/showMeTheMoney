@@ -531,6 +531,8 @@ def edit_list_in_dict(prompt, options, dct, key, dct_path, add=True):
         return None
 
 def validate_lst_type(lst, typ):
+    if type(lst) != list:
+        return False
     for item in lst:
         if type(item) != typ:
             return False
@@ -539,19 +541,22 @@ def validate_lst_type(lst, typ):
 def get_input_given_type(prompt, data_type, abortchar='q', setting=None):
     done = False 
     while not done:
-        try:
-            
-            if data_type == list:
-                if validate_lst_type(setting, int):
-                    user_in = format_input_to_list(prompt, mode='integer')
-                elif validate_lst_type(setting, str):
-                    user_in = format_input_to_list(prompt, mode='string')
 
-            else:
-                user_in = input(prompt)
-            if user_in == 'q':
-                print("Aborting.")
-                return
+            
+
+        if validate_lst_type(setting, int):
+            user_in = format_input_to_list(prompt, mode='integer', quit_str=abortchar)
+        elif validate_lst_type(setting, str):
+            user_in = format_input_to_list(prompt, mode='string', quit_str=abortchar)
+
+        else:
+            user_in = input(prompt + f"'{abortchar}' aborts: ")
+        
+        if user_in == abortchar or user_in is None:
+            print("Aborting.")
+            return
+
+        try:
             user_in = data_type(user_in)
             if type(user_in) is not data_type:
                 print(f"Please input '{data_type}' for this entry!")
