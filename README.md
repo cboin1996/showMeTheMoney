@@ -3,7 +3,7 @@ An CLI app used for inputting banking data and plotting graphs for budgeting pur
 
 ### Dependencies
 
-1. Scotiabank is the only banking platform (as of right now) that the program parses
+1. Program is capable of importing SCOTIABANK, CIBC, BMO and RBC.
 2. pandas, matplotlib, numpy
 
 ### Setup
@@ -80,6 +80,10 @@ Each file plays a crucial role in the parsing of raw bank data, and is considere
   - e.g. amazon transactions show up as amaz\*on, or amaz\*on mkt\*pl etc.  These are hard to predict and filter for, so the app asks the user to match these tougher storenames to either an existing one or create a new one.  This way, if that storename shows up again, the app knows how to handle it, and what epenses go with it.  
 - storesWithExpenses.json  
   - Used to pair the storenames declared by the user to expenses selected from expenses.json  
+- monthly_notes.json
+  - Keeps track of notes to be overlayed onto the plots
+- settings.json
+  - keeps track of which bank(s) you use, along with custimizable settings
 
 The 'db' folder contains two sub folders.. one for income and one for expenses.  Upon import, the raw data is filtered and split into income and expenses, and saved in these respective folders
 
@@ -90,6 +94,7 @@ The editor provides the following functionality:
 
 - storename editing  
   - changing of storenames  
+  - editing of bank storenames to user storenames
 - budget editing  
   - changing the dollar amounts in a month's budget  
 - expense editing  
@@ -98,8 +103,19 @@ The editor provides the following functionality:
   - pair expense(s) to stores  
   - delete an expense from the entire database  
   - edit an expense within the data frame  
+  - unpair expense(s) from stores
+  - add an expense to be subtracted in your plot title
+  - remove an expense that is subtracted in the plot title
 - database editing (db/expenses/ or db/income/)  
-  - Delete a row from the database  
+  - move transactions to the recycle bin
+  - adjust a transactions price manually
+  - adjust a transactions price by another
+  - restore or delete from the recycling bin
+- notes
+  - add note overlay to your plots
+- settings
+  - customize your apps number of plots, plot sizes, font sizes etc
+
 
 Its important to understand that the editor should be the only way the user edits any data.  The databases are all related to each other.  
 If you were to manually change an expense name you would have to find and replace the change manually across all databases.  Using the editor makes editing simple (at least to me).  
