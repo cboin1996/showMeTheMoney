@@ -261,6 +261,7 @@ def get_income(db_inc_data_fpaths: list, dont_print_cols=None, bankconfig=None):
 def choose_months_in_dfs(df_exp,df_budg,df_inc, years):
     for year in years:
         months = data_help.extract_year_month(df_exp[year].index.to_series())
+        months.sort()
         months_to_show = util.select_indices_of_list(f"Which months in {year} do you want to see? 'a' for all: ", list(months), return_matches=True,
                                                         abortchar='q', ret_all_char='a')
         if months_to_show == None:
@@ -522,12 +523,14 @@ def budg_plotter(df_to_plot, budget_df, df_inc, settings = None, title_templ="",
                                         all_exp_tot, all_net_inc, all_budg_tot, all_budg_re, f"{year} summary.")
     
     
-    plt.figure(figsize=figsize, facecolor='white')
-
-    if len(df_to_plot.groupby(level=0)) == 1:
+    if len(df_to_plot.groupby(level=0)) == 1: # detect if only one plot should be produced, and update settings accordingly
         subfigs_per_fig = 1
         nrows = 1
         ncols = 1
+        figsize = settings[env.SINGLE_PLOT_SIZE_KEY]
+    
+    plt.figure(figsize=figsize, facecolor='white')
+
 
     for date, sub_df in df_to_plot.groupby(level=0):
         str_date = date.strftime("%Y-%m-%d")

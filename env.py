@@ -133,6 +133,22 @@ MONTH_NUM_ROWS_DEFAULT = 2
 MONTH_NUM_COLS_KEY = "monthly plots number of columns"
 MONTH_NUM_COLS_DEFAULT = 2
 
+SINGLE_PLOT_SIZE = (12, 8)
+SINGLE_PLOT_SIZE_KEY = "Figure size for single plots"
+
+SETTINGS_TEMPL = {  
+                    BANK_SELECTION_KEY : [],
+                    BANK_CHOICES_KEY: BANK_OPTIONS,
+                    PLOT_SIZE_KEY: PLOT_SIZE_DEFAULT,
+                    NUM_ROWS_KEY: NUM_ROWS_DEFAULT,
+                    NUM_COLS_KEY: NUM_COLS_DEFAULT,       
+                    PA_FIG_TITL_SIZE_KEY : PA_FIG_TITL_SIZE_DEFAULT,
+                    SUB_FIG_TITL_SIZE_KEY : SUB_FIG_TITL_SIZE_DEFAULT,
+                    MONTH_NUM_ROWS_KEY : MONTH_NUM_ROWS_DEFAULT,
+                    MONTH_NUM_COLS_KEY : MONTH_NUM_COLS_DEFAULT,
+                    SINGLE_PLOT_SIZE_KEY : SINGLE_PLOT_SIZE
+}
+
 
 def mydateparser(x): return pd.datetime.strptime(x, "%Y-%m-%d")
 
@@ -193,17 +209,7 @@ NOTES_FNAME = 'monthly_notes.json'
 SETTINGS_JSON_NAME = 'settings.json'
 
 
-SETTINGS_TEMPL = {  
-                    BANK_SELECTION_KEY : [],
-                    BANK_CHOICES_KEY: BANK_OPTIONS,
-                    PLOT_SIZE_KEY: PLOT_SIZE_DEFAULT,
-                    NUM_ROWS_KEY: NUM_ROWS_DEFAULT,
-                    NUM_COLS_KEY: NUM_COLS_DEFAULT,       
-                    PA_FIG_TITL_SIZE_KEY : PA_FIG_TITL_SIZE_DEFAULT,
-                    SUB_FIG_TITL_SIZE_KEY : SUB_FIG_TITL_SIZE_DEFAULT,
-                    MONTH_NUM_ROWS_KEY : MONTH_NUM_ROWS_DEFAULT,
-                    MONTH_NUM_COLS_KEY : MONTH_NUM_COLS_DEFAULT,
-}
+
 EXPENSE_DATA_KEY = 'expense'
 BUDGET_TOTAL_KEY = 'total'
 EXPENSES_SUBTRACTED_KEY = "subtract"
