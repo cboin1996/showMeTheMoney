@@ -198,10 +198,7 @@ def expenses_editor(db_exp_data_fpaths, exp_recbin_path, stor_pair_path, exp_sto
         elif user_in == 'b': # TODO
             edit_expense_name(db_exp_data_fpaths[0], df, exp_recbin_path, df_rec, exp_data, budg_data, exp_stor_data, exp_path, budg_path, exp_stor_data_path)
         elif user_in == 'c':
-            pair_prompt = "Enter the expenses you want to add to store, separated by a space.. (q) to abort: "
-            expenses = util.select_indices_of_list(pair_prompt, exp_data[env.EXPENSE_DATA_KEY], return_matches=True, abortchar='q')
-            if expenses != None:
-                add_expenses_to_store(exp_stor_data, exp_stor_data_path, expenses)
+            add_expenses_to_store(exp_stor_data, exp_stor_data_path, exp_data)
         elif user_in == 'd':
             remove_expense_from_dbs(db_exp_data_fpaths[0], exp_recbin_path, exp_stor_data, exp_data, budg_data, df, df_rec, exp_stor_data_path, budg_path, exp_path)
         elif user_in == 'e':
@@ -374,7 +371,7 @@ def add_expense(exp_data, exp_stor_data, exp_path, exp_stor_data_path):
                 print(f"That expense already exists! Try another one. Heres the list of existing expenses: {exp_data[env.EXPENSE_DATA_KEY]}")
 
 
-def add_expenses_to_store(exp_stor_data, exp_stor_data_path, expenses):
+def add_expenses_to_store(exp_stor_data, exp_stor_data_path, exp_data):
     """
     Adds an expense to a store within storesWithExpenses.json
     params:
@@ -382,9 +379,11 @@ def add_expenses_to_store(exp_stor_data, exp_stor_data_path, expenses):
         exp_stor_data_keylist : the list of keys of exp_stor_data
         expense : the expense to add to the store selected by the user
     """
-    stores = util.select_dict_keys_using_integer(exp_stor_data, "Select a store to add this expense to.", print_children=False, quit_str='q', print_aborting=False, print_vals=True)
+    stores = util.select_dict_keys_using_integer(exp_stor_data, "Select the store(s) you wish to add expense(s) to.", print_children=False, quit_str='q', print_aborting=False, print_vals=True)
     if stores != None:
         for store in stores:
+            pair_prompt = f"Which expenses do you want to add to '{store}', separated by a space.. (q) to abort: "
+            expenses = util.select_indices_of_list(pair_prompt, exp_data[env.EXPENSE_DATA_KEY], return_matches=True, abortchar='q')
             for expense in expenses:
                 if expense not in exp_stor_data[store]:
                     exp_stor_data[store].append(expense)
@@ -500,9 +499,15 @@ def df_editor(df_to_move_from_path, df_to_move_to_path = None, restorable=False,
             prompt = prompt + "(c) - reduce a transaction by another\n(q) - quit\nType here: "
             input_chars = ['a', 'b', 'c', 'q']
         else:
-            prompt = "Would you like to: \n(a) - delete a row from the recycle bin\n(b) - restore from recycling\n(q) - quit\nType here: "
+            prompt = "\n".join([
+                                    "Would you like to: ",
+                                    "(a) - delete a row from the recycle bin",
+                                    "(b) - restore from recycling",
+                                    "(q) - quit",
+                                    "Type here: "
+                                ])
             recycle = False # if user is in recycle bin, deleting removes permanently
-            input_chars = ['a', 'b', 'q']
+            input_chars = ['a', 'b', 'c', 'd', 'q']
 
         user_in = util.get_user_input_for_chars(prompt, input_chars)
 
@@ -522,15 +527,27 @@ def df_editor(df_to_move_from_path, df_to_move_to_path = None, restorable=False,
             edit_cell_in_dfcol(df_to_move_from_path, df_to_move_from, col_name=env.ADJUSTMENT, col_type='float')
         
         elif user_in =='c' and restorable == False:
-            edit_df_transaction_price(df_to_edit=df_to_move_from, df_to_edit_path=df_to_move_from_path, col_to_use=env.ADJUSTMENT, df_to_move_reduction_to=df_to_move_reduction_to, 
-                                      df_to_move_reduction_to_path=df_to_move_reduction_to_path, df_with_reductions=df_with_reductions, df_with_reductions_path=df_with_reductions_path,
-                                      reduction_col=env.AMOUNT, uuid_col=uuid_col, df_reduct_uuid_col=df_reduct_uuid_col)
-  
+            prompt = "\n".join([
+                                "What database is the source of your reductions?",
+                                f"(a) - {df_with_reductions_path}",
+                                f"(b) - {df_to_move_reduction_to_path}",
+                                f"(q) - abort",
+                                "Type here: "])
+            selection = util.get_user_input_for_chars(prompt, ['a', 'b', 'q'])
+
+            if selection == 'a':
+                edit_df_transaction_price(df_to_edit=df_to_move_from, df_to_edit_path=df_to_move_from_path, col_to_use=env.ADJUSTMENT, df_to_move_reduction_to=df_to_move_reduction_to, 
+                                        df_to_move_reduction_to_path=df_to_move_reduction_to_path, df_with_reductions=df_with_reductions, df_with_reductions_path=df_with_reductions_path,
+                                        reduction_col=env.AMOUNT, uuid_col=uuid_col, df_reduct_uuid_col=df_reduct_uuid_col)
+            elif selection == 'b':
+                edit_df_transaction_price(df_to_edit=df_to_move_from, df_to_edit_path=df_to_move_from_path, col_to_use=env.ADJUSTMENT, df_with_reductions=df_to_move_reduction_to, 
+                                         df_with_reductions_path=df_to_move_reduction_to_path, reduction_col=env.AMOUNT, uuid_col=uuid_col, df_reduct_uuid_col=df_reduct_uuid_col, perform_swap=False)
+        
         elif user_in == 'q':
             done = True
 
-def edit_df_transaction_price(df_to_edit, df_to_edit_path, col_to_use, df_to_move_reduction_to, df_to_move_reduction_to_path, 
-                              df_with_reductions, df_with_reductions_path, reduction_col, uuid_col=None, df_reduct_uuid_col=None):
+def edit_df_transaction_price(df_to_edit, df_to_edit_path, col_to_use, df_to_move_reduction_to=None, df_to_move_reduction_to_path=None, 
+                              df_with_reductions=None, df_with_reductions_path=None, reduction_col=None, uuid_col=None, df_reduct_uuid_col=None, perform_swap=None):
     """
     params:
         df_to_edit - the dataframe to edit the price on
@@ -538,6 +555,7 @@ def edit_df_transaction_price(df_to_edit, df_to_edit_path, col_to_use, df_to_mov
         df_with_reductions - the dataframe carrying transaction values that can be inserted into df_to_edit
         df_to_move_reduction_to - the df that will take the reduction transaction from df_with_reductions
         reduction_col - the column to grab reduction value from
+        restorable - whether the df is one which transactions can be restored from. e.g. a recycle bin
     """
     index_list = df_to_edit.index.tolist()
     util.print_fulldf(df_to_edit)
@@ -557,11 +575,14 @@ def edit_df_transaction_price(df_to_edit, df_to_edit_path, col_to_use, df_to_mov
 
                 if df_to_edit.at[index, col_to_use] == np.nan: # check for nan value
                     df_to_edit.at[index, col_to_use] = 0.0
-
+                
                 df_with_reductions.at[reduction_index, uuid_col] = df_to_edit.at[index, uuid_col]
                 df_to_edit.at[index, col_to_use] = df_to_edit.at[index, col_to_use] + val
-            df_swap(df_to_move_from=df_with_reductions, df_to_move_to=df_to_move_reduction_to, df_to_move_from_path=df_with_reductions_path,
-                df_to_move_to_path=df_to_move_reduction_to_path, rows=reduction_indices) # writes changes
+            if perform_swap:
+                df_swap(df_to_move_from=df_with_reductions, df_to_move_to=df_to_move_reduction_to, df_to_move_from_path=df_with_reductions_path,
+                    df_to_move_to_path=df_to_move_reduction_to_path, rows=reduction_indices) # writes changes
+            else:
+                data_help.write_data(df_with_reductions, df_with_reductions_path, sortby=env.DATE)
         else:
             break
     

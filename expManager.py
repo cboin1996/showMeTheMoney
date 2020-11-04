@@ -181,8 +181,8 @@ def get_expenses_for_rows(df, stor_exp_data_path, stor_data_path, budg_path, ban
                     print("No storename exists for this transaction.")
                     storename = ""
 
-                print("Curr Transaction:  %-10s | %-10s | %-10s | %-10s " %
-                      (row[env.DATE], row[env.AMOUNT], storename, row[env.TYPE]))
+                print("Curr Transaction:  %-10s | %-10s | %-10s" %
+                      (row[env.DATE], row[env.AMOUNT], storename))
                 selected_exp, exp_stor_db, stor_db, storename = search_store_relationships(storename, exp_stor_db, budg_db[month_end_date],
                                                                                            stor_exp_data_path, stor_db, stor_data_path)
                 df.at[idx, env.FILT_STORENAME] = storename
