@@ -75,6 +75,7 @@ def load_and_process_csvs(file_paths, strip_cols=None, data_type=None):
             
         elif len(df.columns) == 4 and data_type == env.CIBC:
             df.columns = env.CIBC_BASE_COLNAMES
+            df[env.TYPE] = np.nan
 
         elif len(df.columns) == 5 and data_type == env.CIBC:
             df.columns = env.CIBC_CREDIT_COLNAMES
@@ -83,13 +84,13 @@ def load_and_process_csvs(file_paths, strip_cols=None, data_type=None):
         elif len(df.columns) == 5 and data_type == env.BMO:
             df.columns = env.BMO_DEBIT_COLNAMES
             df.drop(columns=[env.NULL], inplace=True)
-            df[env.DATE] = pd.to_datetime(df[env.DATE], format=env.BMO_DATE_FORMAT)
+            df.loc[:,env.DATE] = pd.to_datetime(df.loc[:,env.DATE], format=env.BMO_DATE_FORMAT).copy()
 
 
         elif len(df.columns) == 6 and data_type == env.BMO:
             df.columns = env.BMO_CREDIT_COLNAMES
             df.drop(columns=[env.NULL, env.BMO_CARDNUM_COL, env.BMO_ITEMNUM_COL], inplace=True)
-            df[env.DATE] = pd.to_datetime(df[env.DATE], format=env.BMO_DATE_FORMAT)
+            df.loc[:,env.DATE] = pd.to_datetime(df.loc[:,env.DATE], format=env.BMO_DATE_FORMAT).copy()
         
         elif len(df.columns) == 9 and data_type == env.RBC:
             df.columns = env.RBC_DEBIT_COLNAMES
@@ -150,7 +151,7 @@ def drop_dups(df, col_names, ignore_index=False):
     """
     print("Removing duplicates in your data if any.")
     # this line is crucial for making drop dups work. drop dups doesn't work on pandas Object type for dates.
-    df[env.DATE] = pd.to_datetime(df[env.DATE])
+    df.loc[:,env.DATE] = pd.to_datetime(df.loc[:,env.DATE]).copy()
     df.drop_duplicates(subset=col_names, inplace=True,
                        ignore_index=ignore_index)
 
@@ -163,7 +164,7 @@ def remove_subframe(df_to_remove_from, df_to_remove, col_names):
     Adding df_to_remove twice guarantees removal.
     """
     df = pd.concat([df_to_remove_from, df_to_remove, df_to_remove])
-    df[env.DATE] = pd.to_datetime(df[env.DATE])
+    df.loc[:,env.DATE] = pd.to_datetime(df.loc[:,env.DATE]).copy()
     df.drop_duplicates(keep=False, inplace=True, subset=col_names, ignore_index=True)
 
     return df
@@ -213,11 +214,11 @@ def filter_by_amnt(df, col_name, col_name2=None, bank_name=None):
         exp_df = df[df[col_name] < 0].copy()
         exp_df.loc[:, col_name] = exp_df[col_name].abs()
     elif bank_name == env.CIBC:
-        inc_df = df[df[col_name2].notna()]
+        inc_df = df[df[col_name2].notna()].copy()
         inc_df.drop(columns=[col_name], inplace=True)
         inc_df.rename(columns={col_name2: col_name}, inplace=True)
 
-        exp_df = df[df[col_name].notna()]
+        exp_df = df[df[col_name].notna()].copy()
         exp_df.drop(columns=[col_name2], inplace=True)
     
 
