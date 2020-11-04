@@ -79,6 +79,7 @@ def load_and_process_csvs(file_paths, strip_cols=None, data_type=None):
 
         elif len(df.columns) == 5 and data_type == env.CIBC:
             df.columns = env.CIBC_CREDIT_COLNAMES
+            df[env.TYPE] = np.nan
             df.drop(columns=[env.CIBC_CARD_NUM_COL], inplace=True)
         
         elif len(df.columns) == 5 and data_type == env.BMO:
