@@ -198,7 +198,7 @@ def expenses_editor(db_exp_data_fpaths, exp_recbin_path, stor_pair_path, exp_sto
         elif user_in == 'b': # TODO
             edit_expense_name(db_exp_data_fpaths[0], df, exp_recbin_path, df_rec, exp_data, budg_data, exp_stor_data, exp_path, budg_path, exp_stor_data_path)
         elif user_in == 'c':
-            add_expenses_to_store(exp_stor_data, exp_stor_data_path, exp_data)
+            add_expenses_to_store(exp_stor_data, exp_stor_data_path, exp_data[env.EXPENSE_DATA_KEY])
         elif user_in == 'd':
             remove_expense_from_dbs(db_exp_data_fpaths[0], exp_recbin_path, exp_stor_data, exp_data, budg_data, df, df_rec, exp_stor_data_path, budg_path, exp_path)
         elif user_in == 'e':
@@ -363,7 +363,7 @@ def add_expense(exp_data, exp_stor_data, exp_path, exp_stor_data_path):
 
                 user_in = util.get_user_input_for_chars(f"Do you want to add expense [{exp}] expense to some stores [y/n]? ", ['y', 'n'])
                 if user_in == 'y':
-                    add_expenses_to_store(exp_stor_data, exp_stor_data_path, [exp])
+                    add_expenses_to_store(exp_stor_data, exp_stor_data_path, [exp], force_add=True)
 
                 else:
                     flag = True
@@ -371,25 +371,32 @@ def add_expense(exp_data, exp_stor_data, exp_path, exp_stor_data_path):
                 print(f"That expense already exists! Try another one. Heres the list of existing expenses: {exp_data[env.EXPENSE_DATA_KEY]}")
 
 
-def add_expenses_to_store(exp_stor_data, exp_stor_data_path, exp_data):
+def add_expenses_to_store(exp_stor_data, exp_stor_data_path, exp_list:list, force_add=False):
     """
     Adds an expense to a store within storesWithExpenses.json
     params:
         exp_stor_data : the dict object of storesWithExpenses.json
         exp_stor_data_keylist : the list of keys of exp_stor_data
-        expense : the expense to add to the store selected by the user
+        exp_list : the expense to add to the store selected by the user
+        force_add : force the list of expenses into the store selection
     """
     stores = util.select_dict_keys_using_integer(exp_stor_data, "Select the store(s) you wish to add expense(s) to.", print_children=False, quit_str='q', print_aborting=False, print_vals=True)
     if stores != None:
         for store in stores:
-            pair_prompt = f"Which expenses do you want to add to '{store}', separated by a space.. (q) to abort: "
-            expenses = util.select_indices_of_list(pair_prompt, exp_data[env.EXPENSE_DATA_KEY], return_matches=True, abortchar='q')
+
+            if not force_add:
+                pair_prompt = f"Which expenses do you want to add to '{store}', separated by a space.. (q) to abort: "
+                expenses = util.select_indices_of_list(pair_prompt, exp_list, return_matches=True, abortchar='q')
+            else:
+                expenses = exp_list
+                
             for expense in expenses:
                 if expense not in exp_stor_data[store]:
                     exp_stor_data[store].append(expense)
                     print(f"Added '{expense}' to '{store}'")
                 else:
                     print(f"Ignoring addition! '{expense}' already is in '{store}'")
+                    
         data_help.write_to_jsonFile(exp_stor_data_path, exp_stor_data)
 
 def remove_exp_from_store(df_path, df, exp_recbin_path, df_rec, exp_stor_data, exp_stor_data_path):
