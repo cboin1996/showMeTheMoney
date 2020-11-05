@@ -266,9 +266,9 @@ def choose_months_in_dfs(df_exp,df_budg,df_inc, years):
                                                         abortchar='q', ret_all_char='a')
         if months_to_show == None:
             return None, None, None, None
-        df_exp_out, df_budg_out, df_inc_out = data_help.drop_dt_indices_not_in_selection(months_to_show, months, df_exp, df_budg, df_inc)
+        dfs = data_help.drop_dt_indices_not_in_selection(months_to_show, months, [df_exp, df_budg, df_inc])
     
-    return df_exp_out, df_budg_out, df_inc_out, months_to_show
+    return dfs[0], dfs[1], dfs[2], months_to_show
 
 def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor_exp_data_path, budg_path, notes_path, exp_path, 
                     dont_print_cols=None, bankconfig=None, settings_path=None):
@@ -310,8 +310,10 @@ def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor
     if years_to_show is None:  # select_indices_of_list returns None if user aborts 
         return None
 
-    df_exp, df_budg, df_inc = data_help.drop_dt_indices_not_in_selection(years_to_show, years, df_exp, df_budg, df_inc)
-    
+    dfs = data_help.drop_dt_indices_not_in_selection(years_to_show, years, [df_exp, df_budg, df_inc])
+    df_exp = dfs[0]
+    df_budg = dfs[1]
+    df_inc = dfs[2]
     if df_exp is None: # quit condition
         return None
 
@@ -326,7 +328,8 @@ def view_money_data(db_exp_data_fpaths, db_inc_data_fpaths, stor_pair_path, stor
         df_exp, df_budg, df_inc, months = choose_months_in_dfs(df_exp,df_budg,df_inc, years_to_show)
         if df_exp is None:
             return None
-        plot_for_date(years, dont_print_cols, exp_dict, df_inc, df_budg,df_exp, 
+        
+        plot_for_date(years, dont_print_cols, exp_dict, df_inc, df_budg, df_exp, 
             settings, notes_dict, freq=env.MONTH_FREQ, freq_desc=freq_desc, months=months)
     elif freq == 'b':
  
@@ -375,10 +378,13 @@ def plot_for_date(years, dont_print_cols, exp_dict, df_inc, df_budg, df_exp, set
     df_inc_per_freq= df_inc.groupby(
         [pd.Grouper(freq=freq)]).sum()
 
-    df_budg_per_freq = df_budg.groupby([pd.Grouper(freq=freq)]).sum() # compile for the frequency
-    df_budg_per_freq = df_budg_per_freq.stack().apply(pd.Series).rename(
-        columns={0: env.BUDGET})  # collapse data into multindex frame
-
+    print(f"All budget info in {time_flag}")
+    if freq == env.YEAR_FREQ:
+        df_budg_per_freq = df_budg.groupby([pd.Grouper(freq=freq)]).sum() # compile for the frequency
+    else:
+        df_budg_per_freq = df_budg
+    df_budg_per_freq = df_budg_per_freq.stack().apply(pd.Series).rename(columns={0: env.BUDGET})  # collapse data into multindex frame
+    util.print_fulldf(df_budg_per_freq)
     print(f"All expense transactions in {time_flag}.")
     util.print_fulldf(df_exp, dont_print_cols=dont_print_cols)
 

@@ -304,21 +304,21 @@ def extract_years(date_col, str_format=True):
         ret = years
     return ret
 
-def drop_dt_indices_not_in_selection(indx_sels, indxs, df1, df2, df3):
+def drop_dt_indices_not_in_selection(indx_sels, indxs, dfs: list):
 
     if indx_sels != indxs:
-        df1out = df1.copy()
-        df2out = df2.copy()
-        df3out = df3.copy()
-        for indx in indxs: # get the indices to drop
-            if indx not in indx_sels:
-                df1out = df1out.drop(df1out.loc[indx].index)
-                df2out = df2out.drop(df2out.loc[indx].index)
-                df3out = df3out.drop(df3out.loc[indx].index)
-        
-        return df1out, df2out, df3out
+        mod_dfs = []
+        for df in dfs:
+            dfout = df.copy()
+            for indx in indxs: # get the indices to drop
+                if indx not in indx_sels and indx in df.index:
+                    dfout.drop(dfout.loc[indx].index, inplace=True)
+            
+            mod_dfs.append(dfout)
 
-    return df1, df2, df3
+        return mod_dfs
+
+    return dfs
 
 def modify_dict_key(dct, old_key, new_key):
     """
