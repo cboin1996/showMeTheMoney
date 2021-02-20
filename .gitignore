@@ -8,6 +8,8 @@ build
 dist
 backups
 lib
+Bug Reports
+.vscode/
 # Do not track these files
 app_data.csv
 expenseDB.json
