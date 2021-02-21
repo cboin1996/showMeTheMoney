@@ -415,10 +415,10 @@ def plot_for_date(years, dont_print_cols, exp_dict, df_inc, df_budg, df_exp, set
 
     budg_plotter(df_exp_budg_per_freq, df_exp_budg_per_freq.groupby(level=0).sum(), df_inc_per_freq, settings=settings, title_templ=title_templ_for_budg, 
                 show=show_plot1, sort_by_level=0, notes=notes_dict, subtractable_expenses=subtractable_expenses, tbox_color='wheat', tbox_style='round', 
-                tbox_alpha=0.5, year=years, freq_desc=freq_desc)
+                tbox_alpha=0.5, year=time_flag, freq_desc=freq_desc)
     title_templ_for_stor_plt = "%s\nIncome: %s | Expenses: %s | Budget: %s\nNet Income: %s | Budget Rem.: %s"
     budg_plotter(df_exp_stor_per_freq, df_exp_budg_per_freq.groupby(level=0).sum(), df_inc_per_freq, settings=settings, title_templ=title_templ_for_stor_plt, 
-                show=show_plot2, sort_by_level=0, notes=notes_dict, tbox_color='wheat', tbox_style='round', tbox_alpha=0.5,  year=years,
+                show=show_plot2, sort_by_level=0, notes=notes_dict, tbox_color='wheat', tbox_style='round', tbox_alpha=0.5,  year=time_flag,
                 freq_desc=freq_desc)
 
 def get_totals(budget_df, df_inc, date_key=None):
@@ -430,7 +430,6 @@ def get_totals(budget_df, df_inc, date_key=None):
         net_inc = round(inc_tot - exp_tot, 2)
     else:
         exp_tot = round(budget_df.loc[date_key, env.AMOUNT].sum(), 2)
-
         if date_key in df_inc.index:  # detect whether there was income that timeframe.
             inc_tot = round(df_inc.loc[date_key, env.AMOUNT].sum(), 2)
         else:
@@ -528,7 +527,6 @@ def budg_plotter(df_to_plot, budget_df, df_inc, settings = None, title_templ="",
     sup_title = get_title(title_templ, df_to_plot, subtractable_expenses, all_inc_tot,
                                         all_exp_tot, all_net_inc, all_budg_tot, all_budg_re, f"{year} summary.")
     
-    
     if len(df_to_plot.groupby(level=0)) == 1: # detect if only one plot should be produced, and update settings accordingly
         subfigs_per_fig = 1
         nrows = 1
@@ -562,7 +560,6 @@ def budg_plotter(df_to_plot, budget_df, df_inc, settings = None, title_templ="",
         title = get_title(title_templ, df_to_plot, subtractable_expenses, inc_tot,
                           exp_tot, net_inc, budg_tot, budg_re, f"{freq_desc} ending: {date.month_name()} {date.year}", 
                           str_date)
-
         ax.set_title(title, size=subfig_titl_font_size)
         sub_ax = sub_df.plot.bar(ax=ax)
 
