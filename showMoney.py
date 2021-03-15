@@ -205,7 +205,7 @@ def edit_money_data(db_exp_data_fpaths, stor_pair_path, stor_exp_data_path, budg
             editor.store_editor(db_exp_data_fpaths, exp_recbin_path, stor_pair_path,
                                 stor_exp_data_path, budg_path, exp_path, bankconfig=bankconfig)
         elif user_in == 'b':
-            editor.budget_editor(budg_path)
+            editor.budget_editor(budg_path, exp_path)
         elif user_in == 'c':
             editor.expenses_editor(
                 db_exp_data_fpaths, exp_recbin_path, stor_pair_path, stor_exp_data_path, budg_path, exp_path, bankconfig=bankconfig)

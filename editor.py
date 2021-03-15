@@ -685,19 +685,21 @@ def sync_expenses(exp_data, exp_stor_data, exp_path, exp_stor_data_path):
         matched_expenses = []
     data_help.write_to_jsonFile(exp_stor_data_path, exp_stor_data)
 
-def budget_editor(budg_path):
+def budget_editor(budg_path, exp_path):
     """
     Allows user to play around with the budget database
     """
     done = False 
-    
-    prompt = "Would you like to \n(a) - change budget amounts\n(q) - quit?\nType here: "
+    exp_data = data_help.read_jsonFile(exp_path)
+    prompt = "Would you like to \n(a) - change budget amounts\n(b) - add expense to budget\n(q) - quit?\nType here: "
     while not done:
         budg_data = data_help.read_jsonFile(budg_path)
         print(env.OUTPUT_SEP_STR)
-        user_in = util.get_user_input_for_chars(prompt, ['a', 'q'])
+        user_in = util.get_user_input_for_chars(prompt, ['a', 'b', 'q'])
         if user_in == 'a':
             change_budget_amounts(budg_data, budg_path)
+        elif user_in == 'b':
+            add_exp_to_budget(budg_data, budg_path, exp_data)
         elif user_in == 'q':
             done = True
 
@@ -727,7 +729,33 @@ def change_budget_amounts(budg_data, budg_path):
         
         data_help.write_to_jsonFile(budg_path, budg_data)
         
-    
+def add_exp_to_budget(budg_data, budg_path, exp_data):
+    """
+    Add's expense to budget
+    """
+    done = False
+    while not done:
+        print(env.OUTPUT_SEP_STR)
+        prompt = "Which budget month would you like to edit eh? (q) to abort: "
+        dates = util.select_indices_of_list(prompt, list(budg_data.keys()), return_matches=True, abortchar='q')
+        if dates is None: # none type returned if user aborts
+            return None
+        for date in dates:
+            print(f"--- Editing {date} ---")
+            expenses = util.select_indices_of_list("Select the expenses you wish to add: ", exp_data[env.EXPENSE_DATA_KEY], abortchar='q', return_matches=True)
+            if expenses is not None:
+                for exp in expenses:
+                    if exp in budg_data[date]:
+                        print("Expense already exists. Skipping!")
+                    else:
+                        amnt = util.get_float_input(f"Enter the amount for '{exp}': ", force_pos=True, roundto=2)
+                        budg_data[date][exp] = amnt
+            else:
+                continue
+        data_help.write_to_jsonFile(budg_path, budg_data)
+            
+                
+
 
 def set_dict_keys_to_lowercase(dct_path):
     """
